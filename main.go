@@ -12,17 +12,17 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/getantibody/folder"
 	"github.com/mattmc3/antibody/antibodylib"
 	"github.com/mattmc3/antibody/project"
 	"github.com/mattmc3/antibody/shell"
-	"github.com/getantibody/folder"
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 // nolint: gochecknoglobals
 var (
-	version = "dev"
+	version = "7.0.0-dev"
 
 	app         = kingpin.New("antibody", "The fastest shell plugin manager")
 	parallelism = app.Flag("parallelism", "max amount of tasks to launch in parallel").
