@@ -25,23 +25,35 @@ type Bundle interface {
 //     caarlos0/add-to-path-style kind:path
 //   - Any git repo, specifying a branch:
 //     caarlos0/versioned-with-branch branch:v1.0 kind:zsh
+//   - Any git repo, autoloading functions from a subpath:
+//     caarlos0/my-plugin autoload:functions
 func New(home, line string) (Bundle, error) {
 	proj, err := project.New(home, line)
 	if err != nil {
 		return nil, err
 	}
+
+	var b Bundle
 	switch kind(line) {
+	case "autoload":
+		b = autoloadBundle{Project: proj}
 	case "path":
-		return pathBundle{Project: proj}, nil
+		b = pathBundle{Project: proj}
 	case "fpath":
-		return fpathBundle{Project: proj}, nil
+		b = fpathBundle{Project: proj}
 	case "clone":
-		return cloneBundle{Project: proj}, nil
+		b = cloneBundle{Project: proj}
 	case "defer":
-		return deferBundle{Project: proj}, nil
+		b = deferBundle{Project: proj}
 	default:
-		return zshBundle{Project: proj}, nil
+		b = zshBundle{Project: proj}
 	}
+
+	if subPath := autoloadAnnotation(line); subPath != "" && kind(line) != "autoload" {
+		b = autoloadAnnotationBundle{inner: b, project: proj, subPath: subPath}
+	}
+
+	return b, nil
 }
 
 func kind(line string) string {
@@ -51,4 +63,13 @@ func kind(line string) string {
 		}
 	}
 	return "zsh"
+}
+
+func autoloadAnnotation(line string) string {
+	for _, part := range strings.Split(line, " ") {
+		if strings.HasPrefix(part, "autoload:") {
+			return strings.TrimPrefix(part, "autoload:")
+		}
+	}
+	return ""
 }

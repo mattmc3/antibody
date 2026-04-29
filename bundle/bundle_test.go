@@ -41,6 +41,10 @@ func TestSuccessfullGitBundles(t *testing.T) {
 			"zsh-users/zsh-autosuggestions kind:defer",
 			"zsh-defer source ",
 		},
+		{
+			"sorin-ionescu/prezto kind:autoload path:modules/helper/functions",
+			"builtin autoload -Uz ",
+		},
 	}
 	for _, row := range table {
 		t.Run(row.line, func(t *testing.T) {
@@ -108,6 +112,31 @@ func TestPathLocalBundle(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "export PATH=\""+home+":$PATH\"", result)
 	require.NoError(t, err)
+}
+
+func TestAutoloadLocalBundle(t *testing.T) {
+	home := home(t)
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(home, "_myfunc"), []byte(""), 0644))
+	bundle, err := New(home, home+" kind:autoload")
+	require.NoError(t, err)
+	result, err := bundle.Get()
+	require.NoError(t, err)
+	require.Contains(t, result, "fpath+=( ")
+	require.Contains(t, result, "builtin autoload -Uz $fpath[-1]/*(N.:t)")
+}
+
+func TestAutoloadAnnotationLocalBundle(t *testing.T) {
+	home := home(t)
+	require.NoError(t, os.MkdirAll(filepath.Join(home, "functions"), 0755))
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(home, "myplugin.plugin.zsh"), []byte(""), 0644))
+	bundle, err := New(home, home+" autoload:functions")
+	require.NoError(t, err)
+	result, err := bundle.Get()
+	require.NoError(t, err)
+	require.Contains(t, result, "builtin autoload -Uz $fpath[-1]/*(N.:t)")
+	require.Contains(t, result, "source ")
 }
 
 func TestDeferLocalBundle(t *testing.T) {
