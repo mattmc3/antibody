@@ -1,7 +1,6 @@
 package bundle
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -63,7 +62,7 @@ func TestZshInvalidGitBundle(t *testing.T) {
 func TestZshLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, ioutil.WriteFile(home+"/a.sh", []byte("echo 9"), 0644))
+	require.NoError(t, os.WriteFile(home+"/a.sh", []byte("echo 9"), 0644))
 	bundle, err := New(home, home)
 	require.NoError(t, err)
 	result, err := bundle.Get()
@@ -98,7 +97,7 @@ func TestPathInvalidLocalBundle(t *testing.T) {
 func TestPathLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, ioutil.WriteFile(filepath.Join(home, "whatever.sh"), []byte(""), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(home, "whatever.sh"), []byte(""), 0644))
 	bundle, err := New(home, home+" kind:path")
 	require.NoError(t, err)
 	result, err := bundle.Get()
@@ -108,7 +107,7 @@ func TestPathLocalBundle(t *testing.T) {
 }
 
 func home(t *testing.T) string {
-	home, err := ioutil.TempDir(os.TempDir(), "antibody")
+	home, err := os.MkdirTemp(os.TempDir(), "antibody")
 	require.NoError(t, err)
 	return home
 }

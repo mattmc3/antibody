@@ -15,16 +15,16 @@ type Bundle interface {
 //
 // Accepted line formats:
 //
-// - Local bundle (download and update do nothing):
-// 		/home/carlos/Code/my-local-bundle
-// - Github repo in the owner/repo format:
-//		caarlos0/github-repo
-// - Git repo in any valid URL form:
-//		https://github.com/caarlos0/other-github-repo.git
-// - Any type of repo, specifying the kind of resource:
-//		caarlos0/add-to-path-style kind:path
-// - Any git repo, specifying a branch:
-//		caarlos0/versioned-with-branch branch:v1.0 kind:zsh
+//   - Local bundle (download and update do nothing):
+//     /home/carlos/Code/my-local-bundle
+//   - Github repo in the owner/repo format:
+//     caarlos0/github-repo
+//   - Git repo in any valid URL form:
+//     https://github.com/caarlos0/other-github-repo.git
+//   - Any type of repo, specifying the kind of resource:
+//     caarlos0/add-to-path-style kind:path
+//   - Any git repo, specifying a branch:
+//     caarlos0/versioned-with-branch branch:v1.0 kind:zsh
 func New(home, line string) (Bundle, error) {
 	proj, err := project.New(home, line)
 	if err != nil {

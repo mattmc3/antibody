@@ -2,7 +2,6 @@ package antibodylib
 
 import (
 	"bytes"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
@@ -29,7 +28,7 @@ func TestAntibody(t *testing.T) {
 		runtime.NumCPU(),
 	).Bundle()
 	require.NoError(t, err)
-	files, err := ioutil.ReadDir(home)
+	files, err := os.ReadDir(home)
 	require.NoError(t, err)
 	require.Len(t, files, 3)
 	require.Contains(t, sh, `export PATH="/tmp:$PATH"`)
@@ -130,7 +129,7 @@ func TestHomeFromEnvironmentVariable(t *testing.T) {
 }
 
 func home() string {
-	home, err := ioutil.TempDir(os.TempDir(), "antibody")
+	home, err := os.MkdirTemp(os.TempDir(), "antibody")
 	if err != nil {
 		panic(err.Error())
 	}

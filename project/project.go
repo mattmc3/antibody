@@ -1,7 +1,7 @@
 package project
 
 import (
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"golang.org/x/sync/errgroup"
@@ -24,12 +24,12 @@ func New(home, line string) (Project, error) {
 
 // List all projects in the given folder
 func List(home string) (result []string, err error) {
-	entries, err := ioutil.ReadDir(home)
+	entries, err := os.ReadDir(home)
 	if err != nil {
 		return result, err
 	}
 	for _, entry := range entries {
-		if entry.Mode().IsDir() && entry.Name()[0] != '.' {
+		if entry.IsDir() && entry.Name()[0] != '.' {
 			result = append(result, entry.Name())
 		}
 	}

@@ -1,4 +1,3 @@
-export PATH := "./bin:" + env_var('PATH')
 export GO111MODULE := "on"
 
 SOURCE_FILES := "./..."
@@ -28,11 +27,6 @@ build-bin-container:
 ci-container:
     just container "go build && go test -v ./... && golangci-lint run ./..."
 
-# Install all the build and lint dependencies
-setup:
-    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin
-    go mod download
-
 # Run all the tests
 test:
     go test {{TEST_OPTIONS}} -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt {{SOURCE_FILES}} -run {{TEST_PATTERN}} -timeout=2m
@@ -43,7 +37,7 @@ cover: test
 
 # Run all the linters
 lint:
-    ./bin/golangci-lint run --disable godox --disable wsl --disable gomnd --disable testpackage --disable gofumpt --disable godot --disable nlreturn --enable-all ./...
+    golangci-lint run ./...
 
 # Run all the tests and code checks
 ci: build test lint
@@ -52,9 +46,9 @@ ci: build test lint
 build:
     go build
 
-# gofmt and goimports all go files
+# Format all go files
 fmt:
-    find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
+    go fmt ./...
 
 # Build release binaries for all platforms (GitHub Actions only)
 build-release VERSION:

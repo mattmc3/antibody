@@ -1,7 +1,6 @@
 package project
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,7 +35,7 @@ func TestDownloadSubmodules(t *testing.T) {
 	var module = filepath.Join(proj.Path(), "plugins")
 	require.NoError(t, proj.Download())
 	require.NoError(t, proj.Update())
-	files, err := ioutil.ReadDir(module)
+	files, err := os.ReadDir(module)
 	require.NoError(t, err)
 	require.True(t, len(files) > 1)
 }
@@ -119,7 +118,7 @@ func TestMultipleSubFolders(t *testing.T) {
 }
 
 func home() string {
-	home, err := ioutil.TempDir(os.TempDir(), "antibody")
+	home, err := os.MkdirTemp(os.TempDir(), "antibody")
 	if err != nil {
 		panic(err.Error())
 	}
