@@ -53,4 +53,4 @@ Which runs all the linters and tests.
 ## Submit a pull request
 
 Push your branch to your `antibody` fork and open a pull request against the
-master branch.
+main branch.
