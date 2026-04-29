@@ -11,7 +11,7 @@ type deferBundle struct {
 }
 
 func (bundle deferBundle) Get() (result string, err error) {
-	result, err = zshBundle{Project: bundle.Project}.Get()
+	result, err = zshBundle(bundle).Get()
 	if err != nil || result == "" {
 		return result, err
 	}
