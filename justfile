@@ -8,9 +8,29 @@ TEST_OPTIONS := "-v"
 # Default target
 default: build
 
+# Run command in dev container
+container CMD:
+    podman run --rm -v "$PWD:/workspace:z" -w /workspace antibody-dev {{CMD}}
+
+# Build dev container image
+build-container:
+    podman build -t antibody-dev .
+
+# Run tests in container
+test-container:
+    just container "go test -v ./..."
+
+# Build in container
+build-bin-container:
+    just container "go build"
+
+# Run CI checks in container
+ci-container:
+    just container "go build && go test -v ./... && golangci-lint run ./..."
+
 # Install all the build and lint dependencies
 setup:
-    curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
+    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ./bin
     go mod download
 
 # Run all the tests
@@ -35,3 +55,82 @@ build:
 # gofmt and goimports all go files
 fmt:
     find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
+
+# Build release binaries for all platforms (GitHub Actions only)
+build-release VERSION:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    mkdir -p dist
+    LDFLAGS="-X main.version={{VERSION}} -s -w"
+
+    echo "Building binaries..."
+    for target in \
+        "linux/amd64" \
+        "linux/arm64" \
+        "darwin/amd64" \
+        "darwin/arm64" \
+        "freebsd/amd64"
+    do
+        os="${target%/*}"
+        arch="${target#*/}"
+        output="dist/antibody_${os}_${arch}"
+        echo "  $os/$arch"
+        GOOS=$os GOARCH=$arch go build -ldflags "$LDFLAGS" -o "$output"
+    done
+
+    echo "Creating archives..."
+    cd dist
+    for binary in antibody_*; do
+        tar czf "${binary}.tar.gz" "$binary"
+    done
+
+    echo "Creating checksums..."
+    sha256sum antibody_*.tar.gz > "antibody_{{VERSION}}_checksums.txt"
+
+    echo "Creating packages..."
+    for arch in amd64 arm64; do
+        cat > nfpm.yaml <<EOF
+    name: antibody
+    arch: $arch
+    platform: linux
+    version: {{VERSION}}
+    maintainer: mattmc3
+    description: The fastest shell plugin manager
+    homepage: https://github.com/mattmc3/antibody
+    license: MIT
+    contents:
+      - src: antibody_linux_$arch
+        dst: /usr/bin/antibody
+    EOF
+        nfpm pkg --packager deb --target "antibody_{{VERSION}}_linux_${arch}.deb"
+        nfpm pkg --packager rpm --target "antibody_{{VERSION}}_linux_${arch}.rpm"
+    done
+    cd ..
+
+    echo "Release artifacts ready in dist/"
+
+# Create a release tag (strips -dev from current version)
+tag:
+    #!/usr/bin/env bash
+    VERSION=$(grep '^current_version' .bumpversion.cfg | cut -d' ' -f3)
+    echo "Creating release v$VERSION"
+    echo "Make sure CHANGELOG.md is updated!"
+    read -p "Press enter to continue..."
+    git tag "v$VERSION"
+    git push --tags
+
+# Bump version after release (e.g., just bump patch)
+bump PART='patch':
+    bumpversion {{PART}}
+    git push
+
+# Prepare changelog for next release
+changelog:
+    #!/usr/bin/env bash
+    VERSION=$(grep '^current_version' .bumpversion.cfg | cut -d' ' -f3)
+    DATE=$(date +%Y-%m-%d)
+    # Update [Unreleased] to [VERSION] - DATE
+    sed -i.bak "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $DATE/" CHANGELOG.md
+    rm CHANGELOG.md.bak
+    echo "Updated CHANGELOG.md for v$VERSION"
+    echo "Edit it to add your changes, then run: just tag"
