@@ -32,3 +32,6 @@ vendor
 dist
 coverage.txt
 antibody
+
+# Cloned antidote for reference
+.antidote

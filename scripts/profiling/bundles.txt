@@ -3,8 +3,8 @@ djui/alias-tips
 stanislas/allergen
 Valiev/almostontop
 fcambus/ansiweather
-smallhadroncollider/antigen-git-rebase
-smallhadroncollider/antigen-git-store
+#smallhadroncollider/antigen-git-rebase
+#smallhadroncollider/antigen-git-store
 mollifier/anyframe
 hchbaw/auto-fu.zsh
 horosgrisa/autoenv
@@ -36,7 +36,7 @@ or17191/going_places
 joepvd/grep2awk
 robertzk/hipchat.zsh
 willghatch/zsh-hooks
-mgryszko/jvm
+#mgryszko/jvm
 supercrabtree/k
 d12frosted/kitsunebook.plugin.zsh
 lesaint/lesaint-mvn
@@ -54,6 +54,7 @@ AlexisBRENON/oh-my-zsh-reminder
 tonyseek/oh-my-zsh-virtualenv-prompt
 hchbaw/opp.zsh
 marshallmick007/osx-dev-zsh-plugin
+#allanhortle/otter
 deyvisonrocha/pantheon-terminal-notify-zsh-plugin
 benclark/parallels-zsh-plugin
 sharat87/pip-app
@@ -76,11 +77,11 @@ hchbaw/zce.zsh
 arlimus/zero.zsh
 kmhjs/zinfo_line
 chrissicool/zsh-256color
-caarlos0/zsh-add-upstream
+#caarlos0/zsh-add-upstream
 mafredri/zsh-async
 Tarrasch/zsh-autoenv
 tarruda/zsh-autosuggestions
-dirkk/zsh-basex
+#dirkk/zsh-basex
 chrissicool/zsh-bash
 Tarrasch/zsh-bd
 Tarrasch/zsh-colors
@@ -89,19 +90,21 @@ tymm/zsh-directory-history
 oknowton/zsh-dwim
 Tarrasch/zsh-functional
 s7anley/zsh-geeknote
-caarlos0/jvm kind:path
-caarlos0/zsh-git-sync
+#caarlos0/zsh-git-sync
 clauswitt/zsh-grunt-plugin
+#horosgrisa/zsh-gvm
 yerinle/zsh-gvm
 joepvd/zsh-hints
 # empty line:
 
 zsh-users/zsh-history-substring-search
+#horosgrisa/zsh-konsole-theme-changer
 knu/zsh-manydots-magic
 psprint/zsh-navigation-tools
 marzocchi/zsh-notify
+#caarlos0/zsh-open-pr
 mkwmms/zsh-osx
-caarlos0/zsh-pg
+#caarlos0/zsh-pg
 RudthMael/zsh-plugin-ibtool
 paraqles/zsh-plugin-rails
 RobSis/zsh-reentry-hook
@@ -114,6 +117,6 @@ sharat87/zsh-vim-mode
 jocelynmallon/zshmarks
 # comments should be ignored
 # URLs:
-git@github.com:caarlos0/jvm.git branch:gh-pages
-https://github.com/caarlos0/zsh-open-pr
-caarlos0/zsh-git-fetch-merge
+#git@github.com:caarlos0/jvm.git
+#https://github.com/caarlos0/zsh-open-pr
+#caarlos0/zsh-git-fetch-merge
