@@ -16,7 +16,10 @@ func TestDownloadAllKinds(t *testing.T) {
 		"http://github.com/zsh-users/zsh-completions.git",
 		"https://github.com/zsh-users/zsh-completions",
 		"https://github.com/zsh-users/zsh-completions.git",
-		"git@github.com:zsh-users/zsh-completions.git",
+	}
+	// Skip SSH URL test in CI (requires SSH keys)
+	if os.Getenv("CI") == "" {
+		urls = append(urls, "git@github.com:zsh-users/zsh-completions.git")
 	}
 	for _, url := range urls {
 		home := home()

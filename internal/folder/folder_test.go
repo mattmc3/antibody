@@ -14,12 +14,12 @@ var data = []struct {
 		"http-COLON--SLASH--SLASH-google.com",
 	},
 	{
-		"git@github.com:getantibody/antibody.git",
-		"git-AT-github.com-COLON-getantibody-SLASH-antibody.git",
+		"git@github.com:mattmc3/antibody.git",
+		"git-AT-github.com-COLON-mattmc3-SLASH-antibody.git",
 	},
 	{
-		"https://github.com/getantibody/folder",
-		"https-COLON--SLASH--SLASH-github.com-SLASH-getantibody-SLASH-folder",
+		"https://github.com/mattmc3/folder",
+		"https-COLON--SLASH--SLASH-github.com-SLASH-mattmc3-SLASH-folder",
 	},
 }
 
