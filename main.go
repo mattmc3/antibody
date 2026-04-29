@@ -12,11 +12,11 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/getantibody/folder"
 	"github.com/mattmc3/antibody/antibodylib"
+	"github.com/mattmc3/antibody/internal/folder"
 	"github.com/mattmc3/antibody/project"
 	"github.com/mattmc3/antibody/shell"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -76,7 +76,7 @@ func main() {
 
 func bundle() {
 	var input io.Reader
-	if !terminal.IsTerminal(int(os.Stdin.Fd())) && len(*bundles) == 0 {
+	if !term.IsTerminal(int(os.Stdin.Fd())) && len(*bundles) == 0 {
 		input = os.Stdin
 	} else {
 		input = bytes.NewBufferString(strings.Join(*bundles, " "))
@@ -113,7 +113,9 @@ func list() {
 	app.FatalIfError(err, "failed to list bundles")
 	w := tabwriter.NewWriter(os.Stdout, 0, 1, 4, ' ', tabwriter.TabIndent)
 	for _, b := range projects {
-		fmt.Fprintf(w, "%s\t%s\n", folder.ToURL(b), filepath.Join(home, b))
+		if _, err := fmt.Fprintf(w, "%s\t%s\n", folder.ToURL(b), filepath.Join(home, b)); err != nil {
+			app.FatalIfError(err, "failed to write")
+		}
 	}
 	app.FatalIfError(w.Flush(), "failed to flush")
 }

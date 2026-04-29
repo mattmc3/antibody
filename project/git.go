@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/getantibody/folder"
+	"github.com/mattmc3/antibody/internal/folder"
 )
 
 // nolint: gochecknoglobals
