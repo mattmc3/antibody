@@ -24,12 +24,6 @@ Carlos aka caarlos0.
     <a href="/LICENSE.md">
       <img alt="Software License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square">
     </a>
-    <a href="https://travis-ci.org/getantibody/antibody">
-       <img alt="Travis" src="https://img.shields.io/travis/getantibody/antibody/master.svg?style=flat-square">
-    </a>
-    <a href="https://codecov.io/gh/getantibody/antibody">
-      <img alt="Codecov branch" src="https://img.shields.io/codecov/c/github/getantibody/antibody/master.svg?style=flat-square">
-    </a>
     <a href="https://goreportcard.com/report/github.com/getantibody/antibody">
       <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/getantibody/antibody?style=flat-square">
     </a>
