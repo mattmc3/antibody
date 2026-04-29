@@ -10,6 +10,10 @@
 #            e.g. github.com/owner/repo
 path-style = "escaped"
 
+[defer]
+# bundle is the zsh-defer plugin used for kind:defer bundles.
+bundle = "romkatv/zsh-defer"
+
 [fpath]
 # rule controls whether fpath entries are appended or prepended.
 # Options: append (default), prepend
