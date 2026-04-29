@@ -168,9 +168,13 @@ func (c *Config) configHomeDir() string {
 }
 
 func configPath() (string, error) {
-	dir, err := os.UserConfigDir()
-	if err != nil {
-		return "", err
+	dir := os.Getenv("XDG_CONFIG_HOME")
+	if dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		dir = filepath.Join(home, ".config")
 	}
 	return filepath.Join(dir, "antibody", "antibody.toml"), nil
 }
