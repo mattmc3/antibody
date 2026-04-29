@@ -17,11 +17,7 @@ func TestDownloadAllKinds(t *testing.T) {
 		"http://github.com/zsh-users/zsh-completions.git",
 		"https://github.com/zsh-users/zsh-completions",
 		"https://github.com/zsh-users/zsh-completions.git",
-		// FIXME: those fail on travis:
-		// "git://github.com/zsh-users/zsh-completions.git", // git:// protocol deprecated/blocked
-		// "git@gitlab.com:zsh-users/test.git",
-		// "ssh://git@github.com/zsh-users/zsh-completions.git",
-		// "git@github.com:zsh-users/zsh-completions.git",
+		"git@github.com:zsh-users/zsh-completions.git",
 	}
 	for _, url := range urls {
 		home := home()
