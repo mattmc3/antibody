@@ -20,24 +20,69 @@
 Antibody is a shell plugin manager made from the ground up thinking about
 performance.
 
-## Documentation
+## Quick Start
 
-See the [docs](docs/) directory for documentation.
+```sh
+# Install from GitHub releases
+# macOS
+curl -sfL https://github.com/mattmc3/antibody/releases/latest/download/antibody_darwin_arm64.tar.gz | tar -xz
+sudo mv antibody /usr/local/bin/
 
-## In the wild
+# Linux
+curl -sfL https://github.com/mattmc3/antibody/releases/latest/download/antibody_linux_amd64.tar.gz | tar -xz
+sudo mv antibody /usr/local/bin/
 
-- I did this mostly for myself, so, my [dotfiles](https://github.com/caarlos0/dotfiles);
-- @nisaacson's [dotfiles](https://github.com/nisaacson/dotfiles);
-- @pragmaticivan's [dotfiles](https://github.com/pragmaticivan/dotfiles);
-- @wkentaro's [dotfiles](https://github.com/wkentaro/dotfiles);
-- @marceldias' [dotfiles](https://github.com/marceldiass/dotfiles);
-- @davidkna's [dotfiles](https://github.com/davidkna/dotfiles);
-- @sobolevn's [dotfiles](https://github.com/sobolevn/dotfiles);
-- @jesseleite's [dotfiles](https://github.com/jesseleite/dotfiles);
-- @mattmc3's [dotfiles](https://github.com/mattmc3/zdotdir/tree/antibody)
-- and probably [many others](https://github.com/search?q=antibody&type=Code);
+# Or install with Go
+go install github.com/mattmc3/antibody@latest
+
+# Bundle plugins
+antibody bundle < ${ZDOTDIR:-$HOME}/.zsh_plugins.txt > ${ZDOTDIR:-$HOME}/.zsh_plugins.zsh
+
+# Load in your .zshrc
+source ${ZDOTDIR:-$HOME}/.zsh_plugins.zsh
+```
+
+## Usage
+
+Create a `${ZDOTDIR:-$HOME}/.zsh_plugins.txt` file with your desired plugins:
+
+```
+# Plugins
+zsh-users/zsh-completions
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-syntax-highlighting
+
+# Themes
+ohmyzsh/ohmyzsh path:plugins/git
+```
+
+Then run:
+
+```sh
+antibody bundle < ${ZDOTDIR:-$HOME}/.zsh_plugins.txt > ${ZDOTDIR:-$HOME}/.zsh_plugins.zsh
+```
+
+Source the generated file in your `.zshrc`:
+
+```sh
+source ${ZDOTDIR:-$HOME}/.zsh_plugins.zsh
+```
+
+## Commands
+
+- `antibody bundle` - Download and bundle plugins
+- `antibody update` - Update all plugins
+- `antibody home` - Show antibody's home directory
+- `antibody list` - List installed plugins
+- `antibody path` - Show plugin path
+- `antibody init` - Initialize shell integration
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Thanks
 
-- [@pragmaticivan](https://github.com/pragmaticivan), for the logo design;
-- All the amazing [contributors](https://github.com/mattmc3/antibody/graphs/contributors).
+- [@caarlos0](https://github.com/caarlos0), original author
+- [@pragmaticivan](https://github.com/pragmaticivan), for the logo design
+- All the amazing [contributors](https://github.com/mattmc3/antibody/graphs/contributors)
