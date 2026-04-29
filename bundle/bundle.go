@@ -108,7 +108,7 @@ func (b decoratedBundle) Get() (result string, err error) {
 }
 
 func kind(line string) string {
-	for part := range strings.SplitSeq(line, " ") {
+	for _, part := range tokenize(line) {
 		if v, ok := strings.CutPrefix(part, "kind:"); ok {
 			return v
 		}
@@ -118,10 +118,39 @@ func kind(line string) string {
 
 // annotation extracts the value for the first annotation with the given prefix.
 func annotation(line, prefix string) string {
-	for part := range strings.SplitSeq(line, " ") {
+	for _, part := range tokenize(line) {
 		if v, ok := strings.CutPrefix(part, prefix); ok {
 			return v
 		}
 	}
 	return ""
+}
+
+// tokenize splits a bundle line on spaces while respecting single and double
+// quoted values, so annotations like post:'my cmd' are kept intact.
+func tokenize(line string) []string {
+	var tokens []string
+	var cur strings.Builder
+	inSingle, inDouble := false, false
+	for _, r := range line {
+		switch {
+		case r == '\'' && !inDouble:
+			inSingle = !inSingle
+			cur.WriteRune(r)
+		case r == '"' && !inSingle:
+			inDouble = !inDouble
+			cur.WriteRune(r)
+		case r == ' ' && !inSingle && !inDouble:
+			if cur.Len() > 0 {
+				tokens = append(tokens, cur.String())
+				cur.Reset()
+			}
+		default:
+			cur.WriteRune(r)
+		}
+	}
+	if cur.Len() > 0 {
+		tokens = append(tokens, cur.String())
+	}
+	return tokens
 }
