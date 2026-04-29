@@ -1,4 +1,4 @@
-module github.com/getantibody/antibody
+module github.com/mattmc3/antibody
 
 require (
 	github.com/getantibody/folder v1.0.0

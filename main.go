@@ -12,9 +12,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/getantibody/antibody/antibodylib"
-	"github.com/getantibody/antibody/project"
-	"github.com/getantibody/antibody/shell"
+	"github.com/mattmc3/antibody/antibodylib"
+	"github.com/mattmc3/antibody/project"
+	"github.com/mattmc3/antibody/shell"
 	"github.com/getantibody/folder"
 	"golang.org/x/crypto/ssh/terminal"
 	"gopkg.in/alecthomas/kingpin.v2"

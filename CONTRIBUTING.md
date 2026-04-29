@@ -18,7 +18,7 @@ Clone `antibody` from source into `$GOPATH`:
 ```sh
 $ mkdir -p $GOPATH/src/github.com/getantibody
 $ cd $_
-$ git clone git@github.com:getantibody/antibody.git
+$ git clone git@github.com:mattmc3/antibody.git
 $ cd antibody
 ```
 

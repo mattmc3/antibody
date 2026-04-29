@@ -1,15 +1,15 @@
 <p align="center">
-  <img alt="GoReleaser Logo" src="logo.png" height="140" />
+  <img alt="Antibody Logo" src="logo.png" height="140" />
   <h3 align="center">Antibody</h3>
   <p align="center">The fastest shell plugin manager.</p>
   <p align="center">
     <a href="/LICENSE.md">
       <img alt="Software License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square">
     </a>
-    <a href="https://goreportcard.com/report/github.com/getantibody/antibody">
-      <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/getantibody/antibody?style=flat-square">
+    <a href="https://goreportcard.com/report/github.com/mattmc3/antibody">
+      <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/mattmc3/antibody?style=flat-square">
     </a>
-    <a href="http://godoc.org/github.com/getantibody/antibody">
+    <a href="http://godoc.org/github.com/mattmc3/antibody">
       <img alt="Go Doc" src="https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square">
     </a>
   </p>
@@ -40,4 +40,4 @@ See the [docs](docs/) directory for documentation.
 ## Thanks
 
 - [@pragmaticivan](https://github.com/pragmaticivan), for the logo design;
-- All the amazing [contributors](https://github.com/getantibody/antibody/graphs/contributors).
+- All the amazing [contributors](https://github.com/mattmc3/antibody/graphs/contributors).

@@ -81,7 +81,7 @@ func TestZshInvalidLocalBundle(t *testing.T) {
 
 func TestZshBundleWithNoShFiles(t *testing.T) {
 	home := home(t)
-	bundle, err := New(home, "getantibody/antibody")
+	bundle, err := New(home, "mattmc3/antibody")
 	require.NoError(t, err)
 	_, err = bundle.Get()
 	require.NoError(t, err)

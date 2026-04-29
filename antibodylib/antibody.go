@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/getantibody/antibody/bundle"
+	"github.com/mattmc3/antibody/bundle"
 	"golang.org/x/sync/errgroup"
 )
 
