@@ -118,7 +118,6 @@ func TestDeferLocalBundle(t *testing.T) {
 	require.NoError(t, err)
 	result, err := bundle.Get()
 	require.NoError(t, err)
-	require.Contains(t, result, "if ! (( $+functions[zsh-defer] )); then")
 	require.Contains(t, result, "zsh-defer source ")
 	for line := range strings.SplitSeq(result, "\n") {
 		if strings.HasPrefix(line, "fpath") {

@@ -115,6 +115,22 @@ func BenchmarkDownload(b *testing.B) {
 	}
 }
 
+func TestDeferEnsureInjectedOnce(t *testing.T) {
+	home := home()
+	bundles := []string{
+		"zsh-users/zsh-autosuggestions kind:defer",
+		"sindresorhus/pure kind:defer",
+	}
+	sh, err := New(
+		home,
+		bytes.NewBufferString(strings.Join(bundles, "\n")),
+		runtime.NumCPU(),
+	).Bundle()
+	require.NoError(t, err)
+	require.Equal(t, 1, strings.Count(sh, "if ! (( $+functions[zsh-defer] )); then"))
+	require.Contains(t, sh, "zsh-defer source ")
+}
+
 func TestHome(t *testing.T) {
 	h, err := Home()
 	require.NoError(t, err)

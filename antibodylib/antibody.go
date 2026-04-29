@@ -28,38 +28,90 @@ func New(home string, r io.Reader, p int) *Antibody {
 
 // Bundle processes all given lines and returns the shell content to execute
 func (a *Antibody) Bundle() (string, error) {
-	var g errgroup.Group
-	var shs safeIndexedLines
-	var idx int
-	var sem = make(chan bool, a.parallelism)
-	var scanner = bufio.NewScanner(a.r)
+	var lines []string
+	scanner := bufio.NewScanner(a.r)
 	for scanner.Scan() {
-		var line = scanner.Text()
-		var index = idx
-		idx++
-		sem <- true
-		g.Go(func() error {
-			defer func() {
-				<-sem
-			}()
-			line = strings.TrimSpace(line)
-			if line == "" || line[0] == '#' {
-				return nil
-			}
-			lineBundle, berr := bundle.New(a.Home, line)
-			if berr != nil {
-				return berr
-			}
-			sh, berr := lineBundle.Get()
-			shs.Append(indexedLine{idx: index, line: sh})
-			return berr
-		})
+		lines = append(lines, scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
 		return "", err
 	}
-	var err = g.Wait()
-	return shs.Items().String(), err
+
+	hasDefer := false
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || line[0] == '#' {
+			continue
+		}
+		if strings.Contains(line, "kind:defer") {
+			hasDefer = true
+			break
+		}
+	}
+
+	var g errgroup.Group
+	var shs safeIndexedLines
+	var sem = make(chan bool, a.parallelism)
+
+	if hasDefer {
+		sem <- true
+		g.Go(func() error {
+			defer func() { <-sem }()
+			sh, err := deferEnsure(a.Home)
+			if err != nil {
+				return err
+			}
+			shs.Append(indexedLine{idx: -1, line: sh})
+			return nil
+		})
+	}
+
+	for i, line := range lines {
+		idx := i
+		l := line
+		sem <- true
+		g.Go(func() error {
+			defer func() { <-sem }()
+			l = strings.TrimSpace(l)
+			if l == "" || l[0] == '#' {
+				return nil
+			}
+			lineBundle, berr := bundle.New(a.Home, l)
+			if berr != nil {
+				return berr
+			}
+			sh, berr := lineBundle.Get()
+			shs.Append(indexedLine{idx: idx, line: sh})
+			return berr
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return "", err
+	}
+	return shs.Items().String(), nil
+}
+
+// deferEnsure builds the load-once ensure block for the zsh-defer tool.
+func deferEnsure(home string) (string, error) {
+	cfg := config.Get()
+	deferBundle, err := bundle.New(home, cfg.DeferBundle())
+	if err != nil {
+		return "", err
+	}
+	deferSrc, err := deferBundle.Get()
+	if err != nil {
+		return "", err
+	}
+	var out []string
+	out = append(out, "if ! (( $+functions[zsh-defer] )); then")
+	for _, line := range strings.Split(deferSrc, "\n") {
+		if line != "" {
+			out = append(out, "  "+line)
+		}
+	}
+	out = append(out, "fi")
+	return strings.Join(out, "\n"), nil
 }
 
 // Home returns the directory where bundles are cloned.
