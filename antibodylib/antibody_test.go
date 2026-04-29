@@ -15,9 +15,9 @@ func TestAntibody(t *testing.T) {
 	home := home()
 	bundles := []string{
 		"# comments also are allowed",
-		"caarlos0/ports kind:path # comment at the end of the line",
-		"caarlos0/jvm kind:path branch:gh-pages",
-		"caarlos0/zsh-open-pr     kind:zsh",
+		"zsh-users/zsh-completions kind:path # comment at the end of the line",
+		"mattmc3/antidote kind:path branch:v1",
+		"zsh-users/zsh-syntax-highlighting     kind:zsh",
 		"",
 		"        ",
 		"  # trick play",
@@ -33,10 +33,10 @@ func TestAntibody(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, files, 3)
 	require.Contains(t, sh, `export PATH="/tmp:$PATH"`)
-	require.Contains(t, sh, `export PATH="`+home+`/https-COLON--SLASH--SLASH-github.com-SLASH-caarlos0-SLASH-ports:$PATH"`)
-	require.Contains(t, sh, `export PATH="`+home+`/https-COLON--SLASH--SLASH-github.com-SLASH-caarlos0-SLASH-jvm:$PATH"`)
+	require.Contains(t, sh, `export PATH="`+home+`/https-COLON--SLASH--SLASH-github.com-SLASH-zsh-users-SLASH-zsh-completions:$PATH"`)
+	require.Contains(t, sh, `export PATH="`+home+`/https-COLON--SLASH--SLASH-github.com-SLASH-mattmc3-SLASH-antidote:$PATH"`)
 	// nolint: lll
-	require.Contains(t, sh, `source `+home+`/https-COLON--SLASH--SLASH-github.com-SLASH-caarlos0-SLASH-zsh-open-pr/git-open-pr.plugin.zsh`)
+	require.Contains(t, sh, `source `+home+`/https-COLON--SLASH--SLASH-github.com-SLASH-zsh-users-SLASH-zsh-syntax-highlighting/zsh-syntax-highlighting.plugin.zsh`)
 }
 
 func TestAntibodyError(t *testing.T) {
@@ -51,17 +51,12 @@ func TestMultipleRepositories(t *testing.T) {
 	home := home()
 	bundles := []string{
 		"# this block is in alphabetic order",
-		"caarlos0/git-add-remote kind:path",
-		"caarlos0/jvm",
-		"caarlos0/ports kind:path",
-		"caarlos0/zsh-git-fetch-merge kind:path",
-		"caarlos0/zsh-git-sync kind:path",
-		"caarlos0/zsh-mkc",
-		"caarlos0/zsh-open-pr kind:path",
+		"unixorn/git-extra-commands kind:path",
+		"zsh-users/zsh-autosuggestions",
+		"zsh-users/zsh-completions kind:path",
 		"mafredri/zsh-async",
 		"rupa/z",
 		"Tarrasch/zsh-bd",
-		"wbinglee/zsh-wakatime",
 		"zsh-users/zsh-completions",
 		"zsh-users/zsh-autosuggestions",
 		"",
@@ -78,7 +73,7 @@ func TestMultipleRepositories(t *testing.T) {
 		runtime.NumCPU(),
 	).Bundle()
 	require.NoError(t, err)
-	require.Len(t, strings.Split(sh, "\n"), 31)
+	require.Len(t, strings.Split(sh, "\n"), 24)
 }
 
 // BenchmarkDownload-8   	       1	2907868713 ns/op	  480296 B/op	    2996 allocs/op v1
@@ -86,16 +81,15 @@ func TestMultipleRepositories(t *testing.T) {
 func BenchmarkDownload(b *testing.B) {
 	var bundles = strings.Join([]string{
 		"ohmyzsh/ohmyzsh path:plugins/aws",
-		"caarlos0/git-add-remote kind:path",
-		"caarlos0/jvm",
-		"caarlos0/ports kind:path",
+		"romkatv/gitstatus kind:path",
+		"mattmc3/antidote branch:v1",
+		"romkatv/zsh-bench kind:path",
 		"",
 		"# comment whatever",
-		"caarlos0/zsh-git-fetch-merge kind:path",
+		"unixorn/git-extra-commands kind:path",
 		"ohmyzsh/ohmyzsh path:plugins/battery",
-		"caarlos0/zsh-git-sync kind:path",
-		"caarlos0/zsh-mkc",
-		"caarlos0/zsh-open-pr kind:path",
+		"trystan2k/zsh-tab-title",
+		"changyuheng/zsh-interactive-cd",
 		"ohmyzsh/ohmyzsh path:plugins/asdf",
 		"mafredri/zsh-async",
 		"rupa/z",

@@ -14,23 +14,23 @@ func TestSuccessfullGitBundles(t *testing.T) {
 		line, result string
 	}{
 		{
-			"caarlos0/jvm",
-			"jvm.plugin.zsh\nfpath+=( ",
+			"zsh-users/zsh-autosuggestions",
+			"zsh-autosuggestions.plugin.zsh\nfpath+=( ",
 		},
 		{
-			"caarlos0/jvm kind:path",
+			"zsh-users/zsh-autosuggestions kind:path",
 			"export PATH=\"",
 		},
 		{
-			"caarlos0/jvm kind:path branch:gh-pages",
+			"mattmc3/antidote kind:path branch:v1",
 			"export PATH=\"",
 		},
 		{
-			"caarlos0/jvm kind:clone",
+			"zsh-users/zsh-autosuggestions kind:clone",
 			"",
 		},
 		{
-			"caarlos0/jvm kind:fpath",
+			"zsh-users/zsh-autosuggestions kind:fpath",
 			"fpath+=( ",
 		},
 		{

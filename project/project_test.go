@@ -11,7 +11,7 @@ import (
 
 func TestList(t *testing.T) {
 	home := home()
-	proj, err := New(home, "caarlos0/jvm branch:gh-pages")
+	proj, err := New(home, "mattmc3/antidote branch:v1")
 	require.NoError(t, err)
 	require.NoError(t, proj.Download())
 	list, err := List(home)
@@ -34,7 +34,7 @@ func TestListNonExistentFolder(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	home := home()
-	repo, err := New(home, "caarlos0/ports")
+	repo, err := New(home, "zsh-users/zsh-completions")
 	require.NoError(t, err)
 	require.NoError(t, repo.Download())
 	require.NoError(t, repo.Update())
@@ -43,8 +43,8 @@ func TestUpdate(t *testing.T) {
 func TestUpdateHome(t *testing.T) {
 	home := home()
 	for _, tt := range []string{
-		"caarlos0/jvm",
-		"caarlos0/ports",
+		"zsh-users/zsh-autosuggestions",
+		"zsh-users/zsh-completions",
 		"/tmp",
 	} {
 		tt := tt
@@ -63,7 +63,7 @@ func TestUpdateNonExistentHome(t *testing.T) {
 
 func TestUpdateHomeWithNoGitProjects(t *testing.T) {
 	home := home()
-	repo, err := New(home, "caarlos0/jvm")
+	repo, err := New(home, "zsh-users/zsh-autosuggestions")
 	require.NoError(t, err)
 	require.NoError(t, repo.Download())
 	require.NoError(t, os.RemoveAll(filepath.Join(repo.Path(), ".git")))
