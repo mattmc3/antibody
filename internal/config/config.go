@@ -1,0 +1,155 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/BurntSushi/toml"
+	"github.com/mattmc3/antibody/internal/pathstyle"
+)
+
+type bundleConfig struct {
+	PathStyle string `toml:"path-style"`
+}
+
+type fpathConfig struct {
+	Rule string `toml:"rule"`
+}
+
+type gitConfig struct {
+	Domain   string `toml:"domain"`
+	Protocol string `toml:"protocol"`
+}
+
+type homeConfig struct {
+	Dir string `toml:"dir"`
+}
+
+// Config holds the antibody configuration.
+type Config struct {
+	Bundle bundleConfig `toml:"bundle"`
+	Fpath  fpathConfig  `toml:"fpath"`
+	Git    gitConfig    `toml:"git"`
+	Home   homeConfig   `toml:"home"`
+}
+
+// nolint: gochecknoglobals
+var instance *Config
+
+// Load reads ~/.config/antibody/antibody.toml and stores it as the singleton
+// returned by Get. Call once at startup. A missing file is not an error.
+func Load() (*Config, error) {
+	cfg := &Config{}
+	path, err := configPath()
+	if err != nil {
+		instance = cfg
+		return cfg, nil
+	}
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		instance = cfg
+		return cfg, nil
+	}
+	if _, err := toml.DecodeFile(path, cfg); err != nil {
+		return nil, fmt.Errorf("antibody: failed to parse config %s: %w", path, err)
+	}
+	instance = cfg
+	return cfg, nil
+}
+
+// Get returns the singleton config. Returns defaults if Load has not been called.
+func Get() *Config {
+	if instance != nil {
+		return instance
+	}
+	return &Config{}
+}
+
+// PathStyle returns the configured PathStyle, defaulting to escaped.
+// Warns to stderr if the configured value is not recognized.
+func (c *Config) PathStyle() pathstyle.PathStyle {
+	s := strings.ToLower(c.Bundle.PathStyle)
+	switch s {
+	case "full", "short", "escaped", "":
+	default:
+		fmt.Fprintf(os.Stderr, "antibody: unknown path-style %q, using \"escaped\"\n", c.Bundle.PathStyle)
+	}
+	return pathstyle.New(s, c.GitDomain())
+}
+
+// FpathRule returns the fpath rule, either "append" (default) or "prepend".
+// Warns to stderr if the configured value is not recognized.
+func (c *Config) FpathRule() string {
+	switch strings.ToLower(c.Fpath.Rule) {
+	case "append", "":
+		return "append"
+	case "prepend":
+		return "prepend"
+	default:
+		fmt.Fprintf(os.Stderr, "antibody: unknown fpath rule %q, using \"append\"\n", c.Fpath.Rule)
+		return "append"
+	}
+}
+
+// GitDomain returns the configured git hosting domain, defaulting to github.com.
+func (c *Config) GitDomain() string {
+	d := strings.TrimPrefix(c.Git.Domain, "https://")
+	d = strings.TrimPrefix(d, "http://")
+	d = strings.TrimRight(d, "/")
+	if d == "" {
+		return "github.com"
+	}
+	return d
+}
+
+// GitProtocol returns the configured git protocol, either "https" (default) or "ssh".
+// Warns to stderr if the configured value is not recognized.
+func (c *Config) GitProtocol() string {
+	switch strings.ToLower(c.Git.Protocol) {
+	case "https", "":
+		return "https"
+	case "ssh":
+		return "ssh"
+	default:
+		fmt.Fprintf(os.Stderr, "antibody: unknown git protocol %q, using \"https\"\n", c.Git.Protocol)
+		return "https"
+	}
+}
+
+// HomeDir returns the directory where bundles are cloned.
+// Priority: $ANTIBODY_HOME env var > config [home] dir > OS cache dir.
+func (c *Config) HomeDir() (string, error) {
+	if dir := os.Getenv("ANTIBODY_HOME"); dir != "" {
+		return dir, nil
+	}
+	if dir := c.configHomeDir(); dir != "" {
+		return dir, nil
+	}
+	dir, err := os.UserCacheDir()
+	return filepath.Join(dir, "antibody"), err
+}
+
+// configHomeDir returns the config [home] dir with ~ expanded.
+func (c *Config) configHomeDir() string {
+	dir := c.Home.Dir
+	if dir == "" {
+		return ""
+	}
+	if strings.HasPrefix(dir, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return dir
+		}
+		return filepath.Join(home, dir[2:])
+	}
+	return dir
+}
+
+func configPath() (string, error) {
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(dir, "antibody", "antibody.toml"), nil
+}

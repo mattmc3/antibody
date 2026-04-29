@@ -58,7 +58,7 @@ func TestNew(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := New(tt.input)
+		got := New(tt.input, "")
 		gotType := fmt.Sprintf("%T", got)
 		if gotType != tt.want {
 			t.Errorf("New(%q) = %v, want %v", tt.input, gotType, tt.want)

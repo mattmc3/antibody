@@ -18,16 +18,18 @@ type PathStyle interface {
 type EscapedStyle struct{}
 
 // ShortStyle uses owner/repo format
-type ShortStyle struct{}
+type ShortStyle struct {
+	Domain string
+}
 
 // FullStyle uses full github.com/owner/repo format
 type FullStyle struct{}
 
-// New creates a PathStyle based on the style name
-func New(style string) PathStyle {
+// New creates a PathStyle based on the style name and git domain.
+func New(style, domain string) PathStyle {
 	switch strings.ToLower(style) {
 	case "short":
-		return &ShortStyle{}
+		return &ShortStyle{Domain: domain}
 	case "full":
 		return &FullStyle{}
 	default:
@@ -73,10 +75,7 @@ func (s *ShortStyle) FromURL(u *url.URL) string {
 }
 
 func (s *ShortStyle) ToURL(path string) string {
-	if !strings.Contains(path, string(filepath.Separator)) {
-		return "https://github.com/" + path
-	}
-	return "https://github.com/" + filepath.ToSlash(path)
+	return "https://" + s.Domain + "/" + filepath.ToSlash(path)
 }
 
 // FullStyle implementation

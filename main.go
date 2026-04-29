@@ -13,7 +13,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/mattmc3/antibody/antibodylib"
-	"github.com/mattmc3/antibody/internal/pathstyle"
+	"github.com/mattmc3/antibody/internal/config"
 	"github.com/mattmc3/antibody/project"
 	"github.com/mattmc3/antibody/shell"
 	"golang.org/x/term"
@@ -49,6 +49,9 @@ func init() {
 }
 
 func main() {
+	_, err := config.Load()
+	app.FatalIfError(err, "failed to parse config")
+
 	app.Author("Carlos Alexandro Becker <caarlos0@gmail.com>")
 	app.Version("antibody version " + version)
 	app.VersionFlag.Short('v')
@@ -112,9 +115,8 @@ func list() {
 	projects, err := project.List(home)
 	app.FatalIfError(err, "failed to list bundles")
 	w := tabwriter.NewWriter(os.Stdout, 0, 1, 4, ' ', tabwriter.TabIndent)
-	style := &pathstyle.EscapedStyle{}
 	for _, b := range projects {
-		if _, err := fmt.Fprintf(w, "%s\t%s\n", style.ToURL(b), filepath.Join(home, b)); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%s\n", config.Get().PathStyle().ToURL(b), filepath.Join(home, b)); err != nil {
 			app.FatalIfError(err, "failed to write")
 		}
 	}
