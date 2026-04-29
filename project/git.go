@@ -2,13 +2,14 @@ package project
 
 import (
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
 
-	"github.com/mattmc3/antibody/internal/folder"
+	"github.com/mattmc3/antibody/internal/pathstyle"
 )
 
 // nolint: gochecknoglobals
@@ -29,7 +30,8 @@ func NewClonedGit(home, folderName string) Project {
 	if err != nil {
 		version = ""
 	}
-	url := folder.ToURL(folderName)
+	style := &pathstyle.EscapedStyle{}
+	url := style.ToURL(folderName)
 	return gitProject{
 		folder:  folderPath,
 		Version: version,
@@ -57,7 +59,7 @@ func NewGit(cwd, line string) Project {
 		}
 	}
 	repo := parts[0]
-	url := "https://github.com/" + repo
+	repoURL := "https://github.com/" + repo
 	switch {
 	case strings.HasPrefix(repo, "http://"):
 		fallthrough
@@ -70,12 +72,27 @@ func NewGit(cwd, line string) Project {
 	case strings.HasPrefix(repo, "git@gitlab.com:"):
 		fallthrough
 	case strings.HasPrefix(repo, "git@github.com:"):
-		url = repo
+		repoURL = repo
 	}
-	folder := filepath.Join(cwd, folder.FromURL(url))
+
+	// Handle git@ style URLs which url.Parse can't handle
+	parseable := repoURL
+	if strings.HasPrefix(parseable, "git@") {
+		// Convert git@host:path to ssh://git@host/path
+		parseable = strings.Replace(parseable, ":", "/", 1)
+		parseable = "ssh://" + parseable
+	}
+
+	u, err := url.Parse(parseable)
+	if err != nil || u == nil {
+		log.Printf("failed to parse URL %s: %v", parseable, err)
+		u = &url.URL{Host: "github.com", Path: "/unknown"}
+	}
+	style := &pathstyle.EscapedStyle{}
+	folder := filepath.Join(cwd, style.FromURL(u))
 	return gitProject{
 		Version: version,
-		URL:     url,
+		URL:     repoURL,
 		folder:  folder,
 		inner:   inner,
 	}
