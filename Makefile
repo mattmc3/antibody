@@ -7,7 +7,6 @@ export GO111MODULE := on
 
 # Install all the build and lint dependencies
 setup:
-	curl -sfL https://install.goreleaser.com/github.com/gohugoio/hugo.sh | sh
 	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh
 	go mod download
 .PHONY: setup
@@ -40,20 +39,5 @@ build:
 fmt:
 	find . -name '*.go' -not -wholename './vendor/*' | while read -r file; do gofmt -w -s "$$file"; goimports -w "$$file"; done
 .PHONY: fmt
-
-# Generate the static documentation
-static:
-	@hugo --enableGitInfo --source www
-.PHONY: static
-
-serve:
-	@hugo server --enableGitInfo --watch --source www
-.PHONY: serve
-
-favicon:
-	wget -O www/static/avatar.png https://avatars2.githubusercontent.com/u/16625397
-	convert www/static/avatar.png -define icon:auto-resize=64,48,32,16 www/static/favicon.ico
-	convert www/static/avatar.png -resize x120 www/static/apple-touch-icon.png
-.PHONY: favicon
 
 .DEFAULT_GOAL := build
