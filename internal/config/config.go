@@ -14,6 +14,10 @@ type bundleConfig struct {
 	PathStyle string `toml:"path-style"`
 }
 
+type deferConfig struct {
+	Bundle string `toml:"bundle"`
+}
+
 type fpathConfig struct {
 	Rule string `toml:"rule"`
 }
@@ -30,6 +34,7 @@ type homeConfig struct {
 // Config holds the antibody configuration.
 type Config struct {
 	Bundle bundleConfig `toml:"bundle"`
+	Defer  deferConfig  `toml:"defer"`
 	Fpath  fpathConfig  `toml:"fpath"`
 	Git    gitConfig    `toml:"git"`
 	Home   homeConfig   `toml:"home"`
@@ -41,20 +46,27 @@ var instance *Config
 // Load reads ~/.config/antibody/antibody.toml and stores it as the singleton
 // returned by Get. Call once at startup. A missing file is not an error.
 func Load() (*Config, error) {
-	cfg := &Config{}
 	path, err := configPath()
 	if err != nil {
-		instance = cfg
-		return cfg, nil
+		instance = &Config{}
+		return instance, nil
 	}
+	cfg, err := loadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	instance = cfg
+	return cfg, nil
+}
+
+func loadFile(path string) (*Config, error) {
+	cfg := &Config{}
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		instance = cfg
 		return cfg, nil
 	}
 	if _, err := toml.DecodeFile(path, cfg); err != nil {
 		return nil, fmt.Errorf("antibody: failed to parse config %s: %w", path, err)
 	}
-	instance = cfg
 	return cfg, nil
 }
 
@@ -76,6 +88,15 @@ func (c *Config) PathStyle() pathstyle.PathStyle {
 		fmt.Fprintf(os.Stderr, "antibody: unknown path-style %q, using \"escaped\"\n", c.Bundle.PathStyle)
 	}
 	return pathstyle.New(s, c.GitDomain())
+}
+
+// DeferBundle returns the bundle spec for the zsh-defer tool,
+// defaulting to romkatv/zsh-defer.
+func (c *Config) DeferBundle() string {
+	if c.Defer.Bundle == "" {
+		return "romkatv/zsh-defer"
+	}
+	return c.Defer.Bundle
 }
 
 // FpathRule returns the fpath rule, either "append" (default) or "prepend".
