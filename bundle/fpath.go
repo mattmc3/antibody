@@ -8,16 +8,30 @@ import (
 )
 
 type fpathBundle struct {
-	Project project.Project
+	Project   project.Project
+	FpathRule string
 }
 
 func (bundle fpathBundle) Get() (result string, err error) {
 	if err = bundle.Project.Download(); err != nil {
 		return result, err
 	}
-	path := bundle.Project.Path()
-	if config.Get().FpathRule() == "prepend" {
-		return fmt.Sprintf("fpath=( %s $fpath )", path), nil
+	return fpathLine(bundle.Project.Path(), bundle.FpathRule), nil
+}
+
+// fpathLine returns the appropriate fpath assignment for a directory.
+// If rule is empty the global config value is used.
+func fpathLine(dir, rule string) string {
+	if resolvedFpathRule(rule) == "prepend" {
+		return fmt.Sprintf("fpath=( %s $fpath )", dir)
 	}
-	return fmt.Sprintf("fpath+=( %s )", path), nil
+	return fmt.Sprintf("fpath+=( %s )", dir)
+}
+
+// resolvedFpathRule returns rule if non-empty, otherwise the config default.
+func resolvedFpathRule(rule string) string {
+	if rule == "" {
+		return config.Get().FpathRule()
+	}
+	return rule
 }

@@ -114,6 +114,48 @@ func TestPathLocalBundle(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestDecoratedLocalBundle(t *testing.T) {
+	home := home(t)
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644))
+
+	t.Run("pre", func(t *testing.T) {
+		b, err := New(home, home+" pre:my_pre_cmd")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.True(t, strings.HasPrefix(result, "my_pre_cmd\n"))
+	})
+
+	t.Run("post", func(t *testing.T) {
+		b, err := New(home, home+" post:my_post_cmd")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.True(t, strings.HasSuffix(result, "\nmy_post_cmd"))
+	})
+
+	t.Run("conditional", func(t *testing.T) {
+		b, err := New(home, home+" conditional:is_mac")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.True(t, strings.HasPrefix(result, "if is_mac; then\n"))
+		require.True(t, strings.HasSuffix(result, "\nfi"))
+	})
+}
+
+func TestFpathRuleAnnotation(t *testing.T) {
+	home := home(t)
+	b, err := New(home, home+" kind:fpath fpath-rule:prepend")
+	require.NoError(t, err)
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(home, "_func"), []byte(""), 0644))
+	result, err := b.Get()
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(result, "fpath=( "), "got: %s", result)
+}
+
 func TestAutoloadLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec

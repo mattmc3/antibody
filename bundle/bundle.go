@@ -33,14 +33,16 @@ func New(home, line string) (Bundle, error) {
 		return nil, err
 	}
 
+	rule := annotation(line, "fpath-rule:")
+
 	var b Bundle
 	switch kind(line) {
 	case "autoload":
-		b = autoloadBundle{Project: proj}
+		b = autoloadBundle{Project: proj, FpathRule: rule}
 	case "path":
 		b = pathBundle{Project: proj}
 	case "fpath":
-		b = fpathBundle{Project: proj}
+		b = fpathBundle{Project: proj, FpathRule: rule}
 	case "clone":
 		b = cloneBundle{Project: proj}
 	case "defer":
@@ -49,26 +51,76 @@ func New(home, line string) (Bundle, error) {
 		b = zshBundle{Project: proj}
 	}
 
-	if subPath := autoloadAnnotation(line); subPath != "" && kind(line) != "autoload" {
-		b = autoloadAnnotationBundle{inner: b, project: proj, subPath: subPath}
+	if subPath := annotation(line, "autoload:"); subPath != "" && kind(line) != "autoload" {
+		b = autoloadAnnotationBundle{inner: b, project: proj, subPath: subPath, fpathRule: rule}
+	}
+
+	pre := annotation(line, "pre:")
+	post := annotation(line, "post:")
+	cond := annotation(line, "conditional:")
+	if pre != "" || post != "" || cond != "" {
+		b = decoratedBundle{inner: b, pre: pre, post: post, conditional: cond}
 	}
 
 	return b, nil
 }
 
+// decoratedBundle wraps a bundle with optional pre/post commands and a
+// conditional guard.
+type decoratedBundle struct {
+	inner       Bundle
+	pre         string
+	post        string
+	conditional string
+}
+
+func (b decoratedBundle) Get() (result string, err error) {
+	inner, err := b.inner.Get()
+	if err != nil {
+		return "", err
+	}
+
+	var lines []string
+	if b.pre != "" {
+		lines = append(lines, b.pre)
+	}
+	if inner != "" {
+		lines = append(lines, inner)
+	}
+	if b.post != "" {
+		lines = append(lines, b.post)
+	}
+	result = strings.Join(lines, "\n")
+
+	if b.conditional != "" {
+		var wrapped []string
+		wrapped = append(wrapped, "if "+b.conditional+"; then")
+		for line := range strings.SplitSeq(result, "\n") {
+			if line != "" {
+				wrapped = append(wrapped, "  "+line)
+			}
+		}
+		wrapped = append(wrapped, "fi")
+		return strings.Join(wrapped, "\n"), nil
+	}
+
+	return result, nil
+}
+
 func kind(line string) string {
-	for _, part := range strings.Split(line, " ") {
-		if strings.HasPrefix(part, "kind:") {
-			return strings.ReplaceAll(part, "kind:", "")
+	for part := range strings.SplitSeq(line, " ") {
+		if v, ok := strings.CutPrefix(part, "kind:"); ok {
+			return v
 		}
 	}
 	return "zsh"
 }
 
-func autoloadAnnotation(line string) string {
-	for _, part := range strings.Split(line, " ") {
-		if strings.HasPrefix(part, "autoload:") {
-			return strings.TrimPrefix(part, "autoload:")
+// annotation extracts the value for the first annotation with the given prefix.
+func annotation(line, prefix string) string {
+	for part := range strings.SplitSeq(line, " ") {
+		if v, ok := strings.CutPrefix(part, prefix); ok {
+			return v
 		}
 	}
 	return ""
