@@ -1,6 +1,7 @@
 package project
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -56,10 +57,25 @@ func List(home string) (result []string, err error) {
 
 // Update all projects in the given folder
 func Update(home string, parallelism int) error {
+	segments := config.Get().PathStyle().Segments()
+	pattern := filepath.Join(home, strings.Repeat("*"+string(filepath.Separator), segments))
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return err
+	}
+
 	folders, err := List(home)
 	if err != nil {
 		return err
 	}
+
+	if len(matches) > 0 && len(folders) == 0 {
+		return fmt.Errorf("no git projects found in %s", home)
+	}
+	if len(folders) == 0 {
+		return nil
+	}
+
 	sem := make(chan bool, parallelism)
 	var g errgroup.Group
 	for _, folder := range folders {
