@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/BurntSushi/toml"
 	"github.com/mattmc3/antibody/internal/pathstyle"
@@ -41,11 +42,17 @@ type Config struct {
 }
 
 // nolint: gochecknoglobals
-var instance *Config
+var (
+	instance   *Config
+	instanceMu sync.Mutex
+)
 
 // Load reads ~/.config/antibody/antibody.toml and stores it as the singleton
 // returned by Get. Call once at startup. A missing file is not an error.
 func Load() (*Config, error) {
+	instanceMu.Lock()
+	defer instanceMu.Unlock()
+
 	path, err := configPath()
 	if err != nil {
 		instance = &Config{}
@@ -72,6 +79,8 @@ func loadFile(path string) (*Config, error) {
 
 // Get returns the singleton config. Returns defaults if Load has not been called.
 func Get() *Config {
+	instanceMu.Lock()
+	defer instanceMu.Unlock()
 	if instance == nil {
 		instance = &Config{}
 	}
