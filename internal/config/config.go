@@ -72,10 +72,10 @@ func loadFile(path string) (*Config, error) {
 
 // Get returns the singleton config. Returns defaults if Load has not been called.
 func Get() *Config {
-	if instance != nil {
-		return instance
+	if instance == nil {
+		instance = &Config{}
 	}
-	return &Config{}
+	return instance
 }
 
 // PathStyle returns the configured PathStyle, defaulting to escaped.

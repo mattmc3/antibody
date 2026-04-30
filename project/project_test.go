@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/mattmc3/antibody/internal/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,6 +25,24 @@ func TestListEmptyFolder(t *testing.T) {
 	list, err := List(home)
 	require.NoError(t, err)
 	require.Len(t, list, 0)
+}
+
+func TestListNestedGitDirs(t *testing.T) {
+	home := home()
+	oldStyle := config.Get().Bundle.PathStyle
+	config.Get().Bundle.PathStyle = "short"
+	defer func() {
+		config.Get().Bundle.PathStyle = oldStyle
+	}()
+
+	require.NoError(t, os.MkdirAll(filepath.Join(home, "owner", "repo", ".git"), 0755))
+	require.NoError(t, os.MkdirAll(filepath.Join(home, "github.com", "owner", "repo", ".git"), 0755))
+
+	list, err := List(home)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []string{
+		"owner/repo",
+	}, list)
 }
 
 func TestListNonExistentFolder(t *testing.T) {
