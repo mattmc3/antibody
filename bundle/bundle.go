@@ -3,6 +3,7 @@ package bundle
 import (
 	"strings"
 
+	"github.com/getantidote/bundleparse"
 	"github.com/mattmc3/antibody/project"
 )
 
@@ -28,38 +29,42 @@ type Bundle interface {
 //   - Any git repo, autoloading functions from a subpath:
 //     caarlos0/my-plugin autoload:functions
 func New(home, line string) (Bundle, error) {
+	parsed, err := bundleparse.ParseBundleLine(line)
+	if err != nil {
+		return nil, err
+	}
+
 	proj, err := project.New(home, line)
 	if err != nil {
 		return nil, err
 	}
 
-	rule := annotation(line, "fpath-rule:")
+	if parsed.Kind == "" {
+		parsed.Kind = bundleparse.KindZsh
+	}
 
 	var b Bundle
-	switch kind(line) {
-	case "autoload":
-		b = autoloadBundle{Project: proj, FpathRule: rule}
-	case "path":
+	switch parsed.Kind {
+	case bundleparse.KindAutoload:
+		b = autoloadBundle{Project: proj, FpathRule: parsed.FpathRule}
+	case bundleparse.KindPath:
 		b = pathBundle{Project: proj}
-	case "fpath":
-		b = fpathBundle{Project: proj, FpathRule: rule}
-	case "clone":
+	case bundleparse.KindFpath:
+		b = fpathBundle{Project: proj, FpathRule: parsed.FpathRule}
+	case bundleparse.KindClone:
 		b = cloneBundle{Project: proj}
-	case "defer":
+	case bundleparse.KindDefer:
 		b = deferBundle{Project: proj}
 	default:
 		b = zshBundle{Project: proj}
 	}
 
-	if subPath := annotation(line, "autoload:"); subPath != "" && kind(line) != "autoload" {
-		b = autoloadAnnotationBundle{inner: b, project: proj, subPath: subPath, fpathRule: rule}
+	if parsed.Autoload != "" && parsed.Kind != bundleparse.KindAutoload {
+		b = autoloadAnnotationBundle{inner: b, project: proj, subPath: parsed.Autoload, fpathRule: parsed.FpathRule}
 	}
 
-	pre := annotation(line, "pre:")
-	post := annotation(line, "post:")
-	cond := annotation(line, "conditional:")
-	if pre != "" || post != "" || cond != "" {
-		b = decoratedBundle{inner: b, pre: pre, post: post, conditional: cond}
+	if parsed.Pre != "" || parsed.Post != "" || parsed.Conditional != "" {
+		b = decoratedBundle{inner: b, pre: parsed.Pre, post: parsed.Post, conditional: parsed.Conditional}
 	}
 
 	return b, nil
@@ -105,52 +110,4 @@ func (b decoratedBundle) Get() (result string, err error) {
 	}
 
 	return result, nil
-}
-
-func kind(line string) string {
-	for _, part := range tokenize(line) {
-		if v, ok := strings.CutPrefix(part, "kind:"); ok {
-			return v
-		}
-	}
-	return "zsh"
-}
-
-// annotation extracts the value for the first annotation with the given prefix.
-func annotation(line, prefix string) string {
-	for _, part := range tokenize(line) {
-		if v, ok := strings.CutPrefix(part, prefix); ok {
-			return v
-		}
-	}
-	return ""
-}
-
-// tokenize splits a bundle line on spaces while respecting single and double
-// quoted values, so annotations like post:'my cmd' are kept intact.
-func tokenize(line string) []string {
-	var tokens []string
-	var cur strings.Builder
-	inSingle, inDouble := false, false
-	for _, r := range line {
-		switch {
-		case r == '\'' && !inDouble:
-			inSingle = !inSingle
-			cur.WriteRune(r)
-		case r == '"' && !inSingle:
-			inDouble = !inDouble
-			cur.WriteRune(r)
-		case r == ' ' && !inSingle && !inDouble:
-			if cur.Len() > 0 {
-				tokens = append(tokens, cur.String())
-				cur.Reset()
-			}
-		default:
-			cur.WriteRune(r)
-		}
-	}
-	if cur.Len() > 0 {
-		tokens = append(tokens, cur.String())
-	}
-	return tokens
 }
