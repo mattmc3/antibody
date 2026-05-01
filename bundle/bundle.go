@@ -43,6 +43,33 @@ func New(home, line string) (Bundle, error) {
 		parsed.Kind = bundleparse.KindZsh
 	}
 
+	return bundleFromParsed(parsed, proj)
+}
+
+func NewFromParsed(home string, parsed bundleparse.Bundle) (Bundle, error) {
+	if parsed.Name == "" {
+		return nil, nil
+	}
+
+	var proj project.Project
+	var err error
+	if strings.HasPrefix(parsed.Name, "/") || strings.HasPrefix(parsed.Name, "~/") {
+		proj, err = project.NewLocal(parsed.Name)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		proj = project.NewGitWithAnnotations(home, parsed.Name, parsed.Branch, parsed.Path)
+	}
+
+	if parsed.Kind == "" {
+		parsed.Kind = bundleparse.KindZsh
+	}
+
+	return bundleFromParsed(parsed, proj)
+}
+
+func bundleFromParsed(parsed bundleparse.Bundle, proj project.Project) (Bundle, error) {
 	var b Bundle
 	switch parsed.Kind {
 	case bundleparse.KindAutoload:

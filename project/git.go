@@ -44,22 +44,8 @@ const (
 	pathMarker   = "path:"
 )
 
-// NewGit A git project can be any repository in any given branch. It will
-// be downloaded to the provided cwd
-func NewGit(cwd, line string) Project {
-	version := ""
-	inner := ""
-	parts := strings.Split(line, " ")
-	for _, part := range parts {
-		if strings.HasPrefix(part, branchMarker) {
-			version = strings.ReplaceAll(part, branchMarker, "")
-		}
-		if strings.HasPrefix(part, pathMarker) {
-			inner = strings.ReplaceAll(part, pathMarker, "")
-		}
-	}
+func newGit(cwd, repo, version, inner string) Project {
 	cfg := config.Get()
-	repo := parts[0]
 	var repoURL string
 	if cfg.GitProtocol() == "ssh" {
 		repoURL = "git@" + cfg.GitDomain() + ":" + repo
@@ -99,6 +85,28 @@ func NewGit(cwd, line string) Project {
 		folder:  folder,
 		inner:   inner,
 	}
+}
+
+// NewGit A git project can be any repository in any given branch. It will
+// be downloaded to the provided cwd
+func NewGit(cwd, line string) Project {
+	version := ""
+	inner := ""
+	parts := strings.Split(line, " ")
+	for _, part := range parts {
+		if strings.HasPrefix(part, branchMarker) {
+			version = strings.ReplaceAll(part, branchMarker, "")
+		}
+		if strings.HasPrefix(part, pathMarker) {
+			inner = strings.ReplaceAll(part, pathMarker, "")
+		}
+	}
+	return newGit(cwd, parts[0], version, inner)
+}
+
+// NewGitWithAnnotations creates a git project from explicit repo, branch, and path.
+func NewGitWithAnnotations(cwd, repo, branch, path string) Project {
+	return newGit(cwd, repo, branch, path)
 }
 
 // nolint: gochecknoglobals

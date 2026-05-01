@@ -5,6 +5,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/getantidote/bundleparse"
 	"github.com/mattmc3/antibody/bundle"
 	"github.com/mattmc3/antibody/internal/config"
 	"golang.org/x/sync/errgroup"
@@ -38,12 +39,13 @@ func (a *Antibody) Bundle() (string, error) {
 	}
 
 	hasDefer := false
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" || line[0] == '#' {
-			continue
-		}
-		if strings.Contains(line, "kind:defer") {
+	input := strings.Join(lines, "\n")
+	parsedBundles, err := bundleparse.ParseBundles(input)
+	if err != nil {
+		return "", err
+	}
+	for _, parsed := range parsedBundles {
+		if parsed.Kind == bundleparse.KindDefer {
 			hasDefer = true
 			break
 		}
@@ -66,22 +68,18 @@ func (a *Antibody) Bundle() (string, error) {
 		})
 	}
 
-	for i, line := range lines {
-		idx := i
-		l := line
+	for i, parsed := range parsedBundles {
+		i := i
+		parsed := parsed
 		sem <- true
 		g.Go(func() error {
 			defer func() { <-sem }()
-			l = strings.TrimSpace(l)
-			if l == "" || l[0] == '#' {
-				return nil
-			}
-			lineBundle, berr := bundle.New(a.Home, l)
+			lineBundle, berr := bundle.NewFromParsed(a.Home, parsed)
 			if berr != nil {
 				return berr
 			}
 			sh, berr := lineBundle.Get()
-			shs.Append(indexedLine{idx: idx, line: sh})
+			shs.Append(indexedLine{idx: i, line: sh})
 			return berr
 		})
 	}

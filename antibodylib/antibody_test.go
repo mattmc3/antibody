@@ -3,6 +3,7 @@ package antibodylib
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -36,6 +37,25 @@ func TestAntibody(t *testing.T) {
 	require.Contains(t, sh, `export PATH="`+home+`/https-COLON--SLASH--SLASH-github.com-SLASH-mattmc3-SLASH-antidote:$PATH"`)
 	// nolint: lll
 	require.Contains(t, sh, `source `+home+`/https-COLON--SLASH--SLASH-github.com-SLASH-zsh-users-SLASH-zsh-syntax-highlighting/zsh-syntax-highlighting.plugin.zsh`)
+}
+
+func TestUsingDirective(t *testing.T) {
+	home := home()
+	repo, err := os.MkdirTemp(os.TempDir(), "antibody-using")
+	require.NoError(t, err)
+	defer os.RemoveAll(repo)
+
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "myplugin.plugin.zsh"), []byte("echo hi"), 0644))
+
+	bundles := []string{
+		"using:" + repo,
+		"git",
+		"extract",
+	}
+
+	sh, err := New(home, bytes.NewBufferString(strings.Join(bundles, "\n")), runtime.NumCPU()).Bundle()
+	require.NoError(t, err)
+	require.Contains(t, sh, "source "+filepath.Join(repo, "myplugin.plugin.zsh"))
 }
 
 func TestAntibodyError(t *testing.T) {
