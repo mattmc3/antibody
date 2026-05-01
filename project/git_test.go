@@ -1,7 +1,9 @@
 package project
 
 import (
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -118,6 +120,57 @@ func TestMultipleSubFolders(t *testing.T) {
 		"ohmyzsh/ohmyzsh path:plugins/aws",
 		"ohmyzsh/ohmyzsh path:plugins/battery",
 	}, "\n")).Download())
+}
+
+func TestDownloadPinnedRepo(t *testing.T) {
+	repoPath, sha := createTempGitRepo(t)
+	home := home()
+	repo := NewGit(home, fmt.Sprintf("file://%s pin:%s", repoPath, sha))
+	if err := repo.Download(); err != nil {
+		t.Fatalf("repo.Download failed: %#v", err)
+	}
+
+	configValue, err := gitConfigGet(repo.Path(), "antibody.pin")
+	if err != nil {
+		out, _ := exec.Command("git", "-C", repo.Path(), "config", "--list").CombinedOutput()
+		t.Fatalf("gitConfigGet failed: %#v, config list: %q", err, string(out))
+	}
+	require.Equal(t, sha, configValue)
+
+	cmd := exec.Command("git", "-C", repo.Path(), "rev-parse", "HEAD")
+	out, err := cmd.Output()
+	require.NoError(t, err)
+	require.Equal(t, sha, strings.TrimSpace(string(out)))
+
+	require.NoError(t, Update(home, 1))
+}
+
+func createTempGitRepo(t *testing.T) (string, string) {
+	dir, err := os.MkdirTemp(os.TempDir(), "gitrepo")
+	require.NoError(t, err)
+
+	cmd := exec.Command("git", "-C", dir, "init")
+	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "-C", dir, "config", "user.name", "Test User")
+	require.NoError(t, cmd.Run())
+	cmd = exec.Command("git", "-C", dir, "config", "user.email", "test@example.com")
+	require.NoError(t, cmd.Run())
+
+	filePath := filepath.Join(dir, "file.txt")
+	require.NoError(t, os.WriteFile(filePath, []byte("hello\n"), 0o644))
+
+	cmd = exec.Command("git", "-C", dir, "add", "file.txt")
+	require.NoError(t, cmd.Run())
+	cmd = exec.Command("git", "-C", dir, "commit", "-m", "initial")
+	require.NoError(t, cmd.Run())
+
+	cmd = exec.Command("git", "-C", dir, "rev-parse", "HEAD")
+	shaBytes, err := cmd.Output()
+	require.NoError(t, err)
+
+	return dir, strings.TrimSpace(string(shaBytes))
 }
 
 func home() string {

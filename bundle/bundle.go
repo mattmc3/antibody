@@ -59,7 +59,7 @@ func NewFromParsed(home string, parsed bundleparse.Bundle) (Bundle, error) {
 			return nil, err
 		}
 	} else {
-		proj = project.NewGitWithAnnotations(home, parsed.Name, parsed.Branch, parsed.Path)
+		proj = project.NewGitWithAnnotations(home, parsed.Name, parsed.Branch, parsed.Path, parsed.Pin)
 	}
 
 	if parsed.Kind == "" {
