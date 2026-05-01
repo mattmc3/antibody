@@ -126,6 +126,8 @@ func TestDownloadPinnedRepo(t *testing.T) {
 	repoPath, sha := createTempGitRepo(t)
 	home := home()
 	repo := NewGit(home, fmt.Sprintf("file://%s pin:%s", repoPath, sha))
+	require.Contains(t, repo.Path(), "-SLASH-tree-SLASH-"+sha)
+	require.NotContains(t, repo.Path(), "/tree/")
 	if err := repo.Download(); err != nil {
 		t.Fatalf("repo.Download failed: %#v", err)
 	}
@@ -143,6 +145,16 @@ func TestDownloadPinnedRepo(t *testing.T) {
 	require.Equal(t, sha, strings.TrimSpace(string(out)))
 
 	require.NoError(t, Update(home, 1))
+}
+
+func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
+	repoPath, _ := createTempGitRepo(t)
+	home := home()
+	sha := "lmnop"
+	repo := NewGit(home, fmt.Sprintf("file://%s pin:%s", repoPath, sha))
+	require.Error(t, repo.Download())
+	require.NoError(t, os.RemoveAll(repoPath))
+	require.NoDirExists(t, repo.Path())
 }
 
 func createTempGitRepo(t *testing.T) (string, string) {

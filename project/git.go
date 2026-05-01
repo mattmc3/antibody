@@ -83,6 +83,9 @@ func newGit(cwd, repo, version, inner, pin string) Project {
 		u = &url.URL{Host: cfg.GitDomain(), Path: "/unknown"}
 	}
 	folder := filepath.Join(cwd, escapedPathFromURL(u))
+	if pin != "" {
+		folder = folder + "-SLASH-tree-SLASH-" + pin
+	}
 	return gitProject{
 		Version: version,
 		URL:     repoURL,
@@ -126,7 +129,9 @@ func (g gitProject) Download() error {
 	lock := l.(*sync.Mutex)
 	lock.Lock()
 	defer lock.Unlock()
+	created := false
 	if _, err := os.Stat(g.folder); os.IsNotExist(err) {
+		created = true
 		// #nosec
 		args := []string{
 			"clone",
@@ -146,7 +151,11 @@ func (g gitProject) Download() error {
 		}
 	}
 	if g.Pin != "" {
-		return g.ensurePinned()
+		err := g.ensurePinned()
+		if err != nil && created {
+			_ = os.RemoveAll(g.folder)
+		}
+		return err
 	}
 	return g.clearPinIfNeeded()
 }

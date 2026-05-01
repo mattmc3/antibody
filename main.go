@@ -97,16 +97,26 @@ func update() {
 }
 
 func purge() {
+	home := findHome()
 	fmt.Printf("Removing %s...\n", *purgee)
-	project, err := project.New(findHome(), *purgee)
-	if err != nil {
-		app.Fatalf(err.Error())
+	root := project.CloneRoot(home, *purgee)
+	candidates := []string{root}
+
+	pinnedGlob := root + "-SLASH-*"
+	if matches, err := filepath.Glob(pinnedGlob); err == nil {
+		candidates = append(candidates, matches...)
 	}
-	var path = project.Path()
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		app.Fatalf("%s does not exist on expected location: %s", *purgee, path)
+
+	removed := false
+	for _, path := range candidates {
+		if _, err := os.Stat(path); err == nil {
+			app.FatalIfError(os.RemoveAll(path), "failed to purge")
+			removed = true
+		}
 	}
-	app.FatalIfError(os.RemoveAll(path), "failed to purge")
+	if !removed {
+		app.Fatalf("%s does not exist on expected location: %s", *purgee, root)
+	}
 	fmt.Println("removed!")
 }
 
@@ -124,14 +134,26 @@ func list() {
 }
 
 func path() {
-	proj, err := project.New(findHome(), *pathee)
-	if err != nil {
-		app.Fatalf(err.Error())
+	home := findHome()
+	root := project.CloneRoot(home, *pathee)
+	paths := []string{root}
+	pinnedGlob := root + "-SLASH-*"
+	if matches, err := filepath.Glob(pinnedGlob); err == nil {
+		paths = append(paths, matches...)
 	}
-	var path = proj.Path()
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+
+	existing := []string{}
+	for _, path := range paths {
+		if _, err := os.Stat(path); err == nil {
+			existing = append(existing, path)
+		}
+	}
+
+	if len(existing) == 0 {
 		app.Fatalf("%s does not exist in cloned paths", *pathee)
-	} else {
+	}
+
+	for _, path := range existing {
 		fmt.Println(path)
 	}
 }

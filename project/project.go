@@ -22,6 +22,15 @@ func New(home, line string) (Project, error) {
 	return NewGit(home, line), nil
 }
 
+// CloneRoot returns the top-level clone directory for the given bundle line.
+func CloneRoot(home, line string) string {
+	proj, _ := New(home, line)
+	if git, ok := proj.(gitProject); ok {
+		return git.folder
+	}
+	return proj.Path()
+}
+
 // List all projects in the given folder
 func List(home string) (result []string, err error) {
 	entries, err := os.ReadDir(home)
