@@ -1,7 +1,0 @@
-bundles=(
-  'using:ohmyzsh/ohmyzsh path:plugins'
-  'git'
-  'extract'
-)
-printf '%s\n' ${bundles[@]} | ./antibody bundle
-

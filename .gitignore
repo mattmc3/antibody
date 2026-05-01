@@ -35,3 +35,7 @@ antibody
 
 # Cloned antidote for reference
 .antidote
+
+# Temp files
+test.txt
+foo*.txt
