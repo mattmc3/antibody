@@ -43,7 +43,9 @@ func TestUsingDirective(t *testing.T) {
 	home := home()
 	repo, err := os.MkdirTemp(os.TempDir(), "antibody-using")
 	require.NoError(t, err)
-	defer os.RemoveAll(repo)
+	defer func() {
+		require.NoError(t, os.RemoveAll(repo))
+	}()
 
 	require.NoError(t, os.WriteFile(filepath.Join(repo, "myplugin.plugin.zsh"), []byte("echo hi"), 0644))
 

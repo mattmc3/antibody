@@ -8,12 +8,7 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	"github.com/mattmc3/antibody/internal/pathstyle"
 )
-
-type bundleConfig struct {
-	PathStyle string `toml:"path-style"`
-}
 
 type deferConfig struct {
 	Bundle string `toml:"bundle"`
@@ -34,11 +29,10 @@ type homeConfig struct {
 
 // Config holds the antibody configuration.
 type Config struct {
-	Bundle bundleConfig `toml:"bundle"`
-	Defer  deferConfig  `toml:"defer"`
-	Fpath  fpathConfig  `toml:"fpath"`
-	Git    gitConfig    `toml:"git"`
-	Home   homeConfig   `toml:"home"`
+	Defer deferConfig `toml:"defer"`
+	Fpath fpathConfig `toml:"fpath"`
+	Git   gitConfig   `toml:"git"`
+	Home  homeConfig  `toml:"home"`
 }
 
 // nolint: gochecknoglobals
@@ -85,18 +79,6 @@ func Get() *Config {
 		instance = &Config{}
 	}
 	return instance
-}
-
-// PathStyle returns the configured PathStyle, defaulting to escaped.
-// Warns to stderr if the configured value is not recognized.
-func (c *Config) PathStyle() pathstyle.PathStyle {
-	s := strings.ToLower(c.Bundle.PathStyle)
-	switch s {
-	case "full", "short", "escaped", "":
-	default:
-		fmt.Fprintf(os.Stderr, "antibody: unknown path-style %q, using \"escaped\"\n", c.Bundle.PathStyle)
-	}
-	return pathstyle.New(s, c.GitDomain())
 }
 
 // DeferBundle returns the bundle spec for the zsh-defer tool,

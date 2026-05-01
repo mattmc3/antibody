@@ -1,12 +1,9 @@
 package project
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
-	"github.com/mattmc3/antibody/internal/config"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -27,55 +24,24 @@ func New(home, line string) (Project, error) {
 
 // List all projects in the given folder
 func List(home string) (result []string, err error) {
-	if _, err := os.Stat(home); err != nil {
-		return result, err
-	}
-
-	segments := config.Get().PathStyle().Segments()
-
-	pattern := filepath.Join(home, strings.Repeat("*"+string(filepath.Separator), segments))
-	matches, err := filepath.Glob(pattern)
+	entries, err := os.ReadDir(home)
 	if err != nil {
 		return result, err
 	}
-
-	for _, path := range matches {
-		gitPath := filepath.Join(path, ".git")
-		info, err := os.Stat(gitPath)
-		if err != nil || !info.IsDir() {
-			continue
+	for _, entry := range entries {
+		if entry.IsDir() && entry.Name()[0] != '.' {
+			result = append(result, entry.Name())
 		}
-		rel, err := filepath.Rel(home, path)
-		if err != nil {
-			return result, err
-		}
-		result = append(result, rel)
 	}
-
 	return result, nil
 }
 
 // Update all projects in the given folder
 func Update(home string, parallelism int) error {
-	segments := config.Get().PathStyle().Segments()
-	pattern := filepath.Join(home, strings.Repeat("*"+string(filepath.Separator), segments))
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return err
-	}
-
 	folders, err := List(home)
 	if err != nil {
 		return err
 	}
-
-	if len(matches) > 0 && len(folders) == 0 {
-		return fmt.Errorf("no git projects found in %s", home)
-	}
-	if len(folders) == 0 {
-		return nil
-	}
-
 	sem := make(chan bool, parallelism)
 	var g errgroup.Group
 	for _, folder := range folders {

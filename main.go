@@ -116,7 +116,7 @@ func list() {
 	app.FatalIfError(err, "failed to list bundles")
 	w := tabwriter.NewWriter(os.Stdout, 0, 1, 4, ' ', tabwriter.TabIndent)
 	for _, b := range projects {
-		if _, err := fmt.Fprintf(w, "%s\t%s\n", config.Get().PathStyle().ToURL(b), filepath.Join(home, b)); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%s\n", project.EscapedPathToURL(b), filepath.Join(home, b)); err != nil {
 			app.FatalIfError(err, "failed to write")
 		}
 	}

@@ -23,13 +23,11 @@ func TestLoadFile_Missing(t *testing.T) {
 	cfg, err := loadFile(testdata("nonexistent.toml"))
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
-	require.Equal(t, "", cfg.Bundle.PathStyle)
 }
 
 func TestLoadFile_Valid(t *testing.T) {
 	cfg, err := loadFile(testdata("antibody.toml"))
 	require.NoError(t, err)
-	require.Equal(t, "escaped", cfg.Bundle.PathStyle)
 	require.Equal(t, "romkatv/zsh-defer", cfg.Defer.Bundle)
 	require.Equal(t, "append", cfg.Fpath.Rule)
 	require.Equal(t, "github.com", cfg.Git.Domain)
@@ -46,36 +44,13 @@ func TestGet_BeforeLoad(t *testing.T) {
 	resetSingleton(t)
 	cfg := Get()
 	require.NotNil(t, cfg)
-	require.Equal(t, "", cfg.Bundle.PathStyle)
 }
 
 func TestGet_AfterLoad(t *testing.T) {
 	resetSingleton(t)
 	instance, _ = loadFile(testdata("antibody.toml"))
 	cfg := Get()
-	require.Equal(t, "escaped", cfg.Bundle.PathStyle)
-}
-
-func TestConfig_PathStyle(t *testing.T) {
-	tests := []struct {
-		input    string
-		wantType string
-	}{
-		{"escaped", "*pathstyle.EscapedStyle"},
-		{"short", "*pathstyle.ShortStyle"},
-		{"full", "*pathstyle.FullStyle"},
-		{"", "*pathstyle.EscapedStyle"},
-	}
-	for _, tt := range tests {
-		cfg := &Config{Bundle: bundleConfig{PathStyle: tt.input}}
-		got := cfg.PathStyle()
-		require.NotNil(t, got)
-	}
-
-	// invalid value warns but returns escaped
-	cfg := &Config{Bundle: bundleConfig{PathStyle: "bogus"}}
-	got := cfg.PathStyle()
-	require.NotNil(t, got)
+	require.NotNil(t, cfg)
 }
 
 func TestConfig_GitDomain(t *testing.T) {

@@ -32,8 +32,7 @@ func NewClonedGit(home, folderName string) Project {
 	if err != nil {
 		version = ""
 	}
-	cfg := config.Get()
-	url := cfg.PathStyle().ToURL(folderName)
+	url := escapedPathToURL(folderName)
 	return gitProject{
 		folder:  folderPath,
 		Version: version,
@@ -83,7 +82,7 @@ func newGit(cwd, repo, version, inner, pin string) Project {
 		log.Printf("failed to parse URL %s: %v", parseable, err)
 		u = &url.URL{Host: cfg.GitDomain(), Path: "/unknown"}
 	}
-	folder := filepath.Join(cwd, cfg.PathStyle().FromURL(u))
+	folder := filepath.Join(cwd, escapedPathFromURL(u))
 	return gitProject{
 		Version: version,
 		URL:     repoURL,
@@ -278,6 +277,26 @@ func branch(folder string) (string, error) {
 	cmd.Dir = folder
 	branch, err := cmd.Output()
 	return strings.ReplaceAll(string(branch), "\n", ""), err
+}
+
+func escapedPathFromURL(u *url.URL) string {
+	result := u.String()
+	result = strings.ReplaceAll(result, ":", "-COLON-")
+	result = strings.ReplaceAll(result, "/", "-SLASH-")
+	result = strings.ReplaceAll(result, "@", "-AT-")
+	return result
+}
+
+func escapedPathToURL(path string) string {
+	result := path
+	result = strings.ReplaceAll(result, "-AT-", "@")
+	result = strings.ReplaceAll(result, "-SLASH-", "/")
+	result = strings.ReplaceAll(result, "-COLON-", ":")
+	return result
+}
+
+func EscapedPathToURL(path string) string {
+	return escapedPathToURL(path)
 }
 
 func (g gitProject) Path() string {
