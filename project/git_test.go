@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/mattmc3/antibody/internal/gittest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -40,9 +40,10 @@ func TestPath(t *testing.T) {
 }
 
 func TestDownloadPinnedRepo(t *testing.T) {
-	repoPath, sha := createTempGitRepo(t)
+	upstream := gittest.New(t)
+	sha := upstream.HEAD()
 	home := home()
-	repo := NewGit(home, fmt.Sprintf("file://%s pin:%s", repoPath, sha))
+	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
 	require.Contains(t, repo.Path(), "-SLASH-tree-SLASH-"+sha)
 	require.NotContains(t, repo.Path(), "/tree/")
 	if err := repo.Download(); err != nil {
@@ -65,41 +66,12 @@ func TestDownloadPinnedRepo(t *testing.T) {
 }
 
 func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
-	repoPath, _ := createTempGitRepo(t)
+	upstream := gittest.New(t)
 	home := home()
 	sha := "lmnop"
-	repo := NewGit(home, fmt.Sprintf("file://%s pin:%s", repoPath, sha))
+	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
 	require.Error(t, repo.Download())
-	require.NoError(t, os.RemoveAll(repoPath))
 	require.NoDirExists(t, repo.Path())
-}
-
-func createTempGitRepo(t *testing.T) (string, string) {
-	dir, err := os.MkdirTemp(os.TempDir(), "gitrepo")
-	require.NoError(t, err)
-
-	cmd := exec.Command("git", "-C", dir, "init")
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
-	require.NoError(t, cmd.Run())
-
-	cmd = exec.Command("git", "-C", dir, "config", "user.name", "Test User")
-	require.NoError(t, cmd.Run())
-	cmd = exec.Command("git", "-C", dir, "config", "user.email", "test@example.com")
-	require.NoError(t, cmd.Run())
-
-	filePath := filepath.Join(dir, "file.txt")
-	require.NoError(t, os.WriteFile(filePath, []byte("hello\n"), 0o644))
-
-	cmd = exec.Command("git", "-C", dir, "add", "file.txt")
-	require.NoError(t, cmd.Run())
-	cmd = exec.Command("git", "-C", dir, "commit", "-m", "initial")
-	require.NoError(t, cmd.Run())
-
-	cmd = exec.Command("git", "-C", dir, "rev-parse", "HEAD")
-	shaBytes, err := cmd.Output()
-	require.NoError(t, err)
-
-	return dir, strings.TrimSpace(string(shaBytes))
 }
 
 func home() string {
