@@ -7,20 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [7.0.0] - TBD
+## [7.0.0] - 2026-07-05
+
+### Added
+- Config file support via `~/.config/antibody/antibody.toml` (git domain
+  and protocol, fpath rule, defer bundle, home dir, completions dir)
+- `kind:defer` bundles, deferred with romkatv/zsh-defer
+- `kind:autoload` bundles and the `autoload:` annotation
+- `pre:` and `post:` hook annotations
+- `if:` conditional annotation
+- `fpath-rule:` annotation with append/prepend rules
+- `pin:` annotation to pin a bundle to a specific commit (full 40-char SHA)
+- Quoted values in bundle annotations
+- `antibody completions zsh` subcommand; `--fpath` writes the `_antibody`
+  file to the completions dir and prints its path
+- `antibody list --dirs` and `--url` flags
 
 ### Changed
-- Moved project to mattmc3/antibody
-- Updated to Go 1.26
-- Replaced deprecated golang.org/x/crypto/ssh/terminal with golang.org/x/term
-- Updated test repositories to use maintained alternatives
-- Switched from Make to Just for build tasks
-- Removed Travis CI and Hound CI configurations
-- Removed Hugo documentation site (moved to docs/ directory)
-- Removed GoReleaser config (replaced with GitHub Actions)
+- Moved project to mattmc3/antibody; this fork is actively maintained and
+  targets feature parity with antidote
+- Tab completion for `antibody` now uses zsh's completion system, with
+  subcommand descriptions and bundle name completion
+- Bundle lines are parsed with the same parser as antidote, so
+  `.zsh_plugins.txt` files work in both
+- Updated to Go 1.26 and refreshed all dependencies
 
 ### Fixed
-- Updated dependency versions for security and compatibility
+- Bundle outputs `$HOME` instead of absolute paths, so generated files are
+  portable across machines
+- Plugins with multiple .zsh files source only their main init file, the
+  same one antidote picks
+- fpath lines are emitted before source lines so completions load reliably
+- Plugins files with Windows or bare carriage-return line endings parse
+  correctly
 
 [Unreleased]: https://github.com/mattmc3/antibody/compare/v7.0.0...HEAD
 [7.0.0]: https://github.com/mattmc3/antibody/compare/v6.1.1...v7.0.0
