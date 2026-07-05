@@ -61,7 +61,7 @@ func TestAntibody(t *testing.T) {
 	require.Contains(t, sh, `export PATH="/tmp:$PATH"`)
 	require.Contains(t, sh, `export PATH="`+escapedDir(home, rPath.URL())+`:$PATH"`)
 	require.Contains(t, sh, `export PATH="`+escapedDir(home, rBranch.URL())+`:$PATH"`)
-	require.Contains(t, sh, `source `+filepath.Join(escapedDir(home, rZsh.URL()), "myplugin.plugin.zsh"))
+	require.Contains(t, sh, `source "`+filepath.Join(escapedDir(home, rZsh.URL()), "myplugin.plugin.zsh")+`"`)
 }
 
 func TestAntibodyError(t *testing.T) {
@@ -103,7 +103,7 @@ func TestMultipleRepositories(t *testing.T) {
 	require.Len(t, strings.Split(sh, "\n"), 11)
 	require.True(
 		t,
-		strings.HasSuffix(sh, filepath.Join(escapedDir(home, rLast.URL()), "myplugin.plugin.zsh")),
+		strings.HasSuffix(sh, filepath.Join(escapedDir(home, rLast.URL()), "myplugin.plugin.zsh")+`"`),
 		"last bundle should come last, got: %s", sh,
 	)
 	files, err := os.ReadDir(home)
@@ -170,7 +170,7 @@ func TestUsingDirective(t *testing.T) {
 
 	sh, err := New(home, bytes.NewBufferString(strings.Join(bundles, "\n")), runtime.NumCPU()).Bundle()
 	require.NoError(t, err)
-	require.Contains(t, sh, "source "+filepath.Join(repo, "myplugin.plugin.zsh"))
+	require.Contains(t, sh, `source "`+filepath.Join(repo, "myplugin.plugin.zsh")+`"`)
 }
 
 func TestBareCarriageReturnLineEndings(t *testing.T) {
@@ -182,8 +182,8 @@ func TestBareCarriageReturnLineEndings(t *testing.T) {
 
 	sh, err := New(home, bytes.NewBufferString(p1+"\r"+p2+"\r"), 1).Bundle()
 	require.NoError(t, err)
-	require.Contains(t, sh, "source "+filepath.Join(p1, "a.plugin.zsh"))
-	require.Contains(t, sh, "source "+filepath.Join(p2, "b.plugin.zsh"))
+	require.Contains(t, sh, `source "`+filepath.Join(p1, "a.plugin.zsh")+`"`)
+	require.Contains(t, sh, `source "`+filepath.Join(p2, "b.plugin.zsh")+`"`)
 }
 
 func TestHome(t *testing.T) {

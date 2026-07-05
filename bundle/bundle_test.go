@@ -155,6 +155,42 @@ func TestDecoratedLocalBundle(t *testing.T) {
 	})
 }
 
+// A clone home containing spaces must produce quoted, sourceable output.
+func TestPathsWithSpaces(t *testing.T) {
+	upstream := gittest.New(t)
+	upstream.WriteFile("myplugin.plugin.zsh", "echo myplugin\n")
+	upstream.Commit("add plugin file")
+	spacedHome := filepath.Join(t.TempDir(), "antibody with spaces")
+	require.NoError(t, os.MkdirAll(spacedHome, 0755))
+
+	t.Run("zsh", func(t *testing.T) {
+		b, err := New(spacedHome, upstream.URL())
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		lines := strings.Split(result, "\n")
+		require.Len(t, lines, 2)
+		require.Regexp(t, `^fpath\+=\( ".* with spaces.*" \)$`, lines[0])
+		require.Regexp(t, `^source ".* with spaces.*/myplugin\.plugin\.zsh"$`, lines[1])
+	})
+
+	t.Run("fpath", func(t *testing.T) {
+		b, err := New(spacedHome, upstream.URL()+" kind:fpath")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.Regexp(t, `^fpath\+=\( ".* with spaces.*" \)$`, result)
+	})
+
+	t.Run("defer", func(t *testing.T) {
+		b, err := New(spacedHome, upstream.URL()+" kind:defer")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.Regexp(t, `zsh-defer source ".* with spaces.*/myplugin\.plugin\.zsh"`, result)
+	})
+}
+
 func TestQuotedAnnotationValues(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
@@ -249,7 +285,7 @@ func TestEnvVarLocalBundle(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.Equal(t, "fpath+=( $MYPLUGS/myplug )\nsource $MYPLUGS/myplug/myplug.plugin.zsh", result)
+		require.Equal(t, `fpath+=( "$MYPLUGS/myplug" )`+"\n"+`source "$MYPLUGS/myplug/myplug.plugin.zsh"`, result)
 	})
 
 	t.Run("path", func(t *testing.T) {
@@ -269,7 +305,7 @@ func TestEnvVarLocalBundle(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.Equal(t, "source $MYPLUGS/single.zsh", result)
+		require.Equal(t, `source "$MYPLUGS/single.zsh"`, result)
 	})
 
 	t.Run("no expansion or globbing", func(t *testing.T) {
@@ -283,7 +319,7 @@ func TestEnvVarLocalBundle(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.Equal(t, "fpath+=( $MYPLUGS/oddplug )\nsource $MYPLUGS/oddplug/oddplug.plugin.zsh", result)
+		require.Equal(t, `fpath+=( "$MYPLUGS/oddplug" )`+"\n"+`source "$MYPLUGS/oddplug/oddplug.plugin.zsh"`, result)
 	})
 }
 
@@ -298,8 +334,8 @@ func TestRelativeLocalBundle(t *testing.T) {
 	require.NoError(t, err)
 	result, err := b.Get()
 	require.NoError(t, err)
-	require.Contains(t, result, "fpath+=( ./myplug )")
-	require.Contains(t, result, "source ./myplug/myplug.plugin.zsh")
+	require.Contains(t, result, `fpath+=( "./myplug" )`)
+	require.Contains(t, result, `source "./myplug/myplug.plugin.zsh"`)
 }
 
 func TestHomeSubstitution(t *testing.T) {
@@ -315,8 +351,8 @@ func TestHomeSubstitution(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.Contains(t, result, "fpath+=( $HOME/myplugin )")
-		require.Contains(t, result, "source $HOME/myplugin/myplugin.plugin.zsh")
+		require.Contains(t, result, `fpath+=( "$HOME/myplugin" )`)
+		require.Contains(t, result, `source "$HOME/myplugin/myplugin.plugin.zsh"`)
 	})
 
 	t.Run("path", func(t *testing.T) {
@@ -340,7 +376,7 @@ func TestInitFileDirNamePriority(t *testing.T) {
 	require.NoError(t, err)
 	result, err := b.Get()
 	require.NoError(t, err)
-	require.Contains(t, result, "source "+filepath.Join(dir, "myplug.plugin.zsh"))
+	require.Contains(t, result, `source "`+filepath.Join(dir, "myplug.plugin.zsh")+`"`)
 	require.NotContains(t, result, "other.plugin.zsh")
 }
 
@@ -354,8 +390,8 @@ func TestInitFileAssumeDefault(t *testing.T) {
 	require.NoError(t, err)
 	result, err := b.Get()
 	require.NoError(t, err)
-	require.Contains(t, result, "fpath+=( "+dir+" )")
-	require.Contains(t, result, "source "+filepath.Join(dir, "myplug.plugin.zsh"))
+	require.Contains(t, result, `fpath+=( "`+dir+`" )`)
+	require.Contains(t, result, `source "`+filepath.Join(dir, "myplug.plugin.zsh")+`"`)
 }
 
 func TestDeferredPost(t *testing.T) {

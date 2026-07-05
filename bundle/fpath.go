@@ -23,9 +23,9 @@ func (bundle fpathBundle) Get() (result string, err error) {
 // already in display form. If rule is empty the global config value is used.
 func fpathLine(dir, rule string) string {
 	if resolvedFpathRule(rule) == "prepend" {
-		return fmt.Sprintf("fpath=( %s $fpath )", dir)
+		return fmt.Sprintf("fpath=( %s $fpath )", quote(dir))
 	}
-	return fmt.Sprintf("fpath+=( %s )", dir)
+	return fmt.Sprintf("fpath+=( %s )", quote(dir))
 }
 
 // resolvedFpathRule returns rule if non-empty, otherwise the config default.

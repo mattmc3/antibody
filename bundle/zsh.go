@@ -22,9 +22,9 @@ func (bundle zshBundle) Get() (result string, err error) {
 	// globbed in the output.
 	if strings.HasPrefix(dir, "$") {
 		if info, err := os.Stat(os.ExpandEnv(dir)); err == nil && info.Mode().IsRegular() {
-			return "source " + dir, nil
+			return "source " + quote(dir), nil
 		}
-		return fpathLine(dir, "") + "\nsource " + dir + "/" + initFileBase(dir) + ".plugin.zsh", nil
+		return fpathLine(dir, "") + "\nsource " + quote(dir+"/"+initFileBase(dir)+".plugin.zsh"), nil
 	}
 	info, err := os.Stat(dir)
 	if err != nil {
@@ -33,7 +33,7 @@ func (bundle zshBundle) Get() (result string, err error) {
 	// it is a file, not a folder, so just return it
 	if info.Mode().IsRegular() {
 		// XXX: should we add the parent folder to fpath too?
-		return "source " + display(bundle.Project, dir), nil
+		return "source " + quote(display(bundle.Project, dir)), nil
 	}
 	files, err := initFiles(dir)
 	if err != nil {
@@ -41,9 +41,15 @@ func (bundle zshBundle) Get() (result string, err error) {
 	}
 	lines := []string{fpathLine(display(bundle.Project, dir), "")}
 	for _, file := range files {
-		lines = append(lines, "source "+display(bundle.Project, file))
+		lines = append(lines, "source "+quote(display(bundle.Project, file)))
 	}
 	return strings.Join(lines, "\n"), nil
+}
+
+// quote wraps an emitted path in double quotes so paths with spaces
+// survive; $HOME and $VAR references still expand at load time.
+func quote(p string) string {
+	return `"` + p + `"`
 }
 
 // initFiles picks the files to source for a plugin directory:
