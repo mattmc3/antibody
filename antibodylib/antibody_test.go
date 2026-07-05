@@ -153,6 +153,21 @@ func TestDeferEnsureInjectedOnce(t *testing.T) {
 	require.Contains(t, sh, "zsh-defer source ")
 }
 
+func TestBareCarriageReturnLineEndings(t *testing.T) {
+	home := home()
+	p1, err := os.MkdirTemp(os.TempDir(), "antibody-cr1")
+	require.NoError(t, err)
+	p2, err := os.MkdirTemp(os.TempDir(), "antibody-cr2")
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(p1, "a.plugin.zsh"), []byte(""), 0644))
+	require.NoError(t, os.WriteFile(filepath.Join(p2, "b.plugin.zsh"), []byte(""), 0644))
+
+	sh, err := New(home, bytes.NewBufferString(p1+"\r"+p2+"\r"), 1).Bundle()
+	require.NoError(t, err)
+	require.Contains(t, sh, "source "+filepath.Join(p1, "a.plugin.zsh"))
+	require.Contains(t, sh, "source "+filepath.Join(p2, "b.plugin.zsh"))
+}
+
 func TestHome(t *testing.T) {
 	h, err := Home()
 	require.NoError(t, err)

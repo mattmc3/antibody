@@ -39,7 +39,8 @@ func (a *Antibody) Bundle() (string, error) {
 	}
 
 	hasDefer := false
-	input := strings.Join(lines, "\n")
+	// normalize bare \r line endings
+	input := strings.ReplaceAll(strings.Join(lines, "\n"), "\r", "\n")
 	parsedBundles, err := bundleparse.ParseBundles(input)
 	if err != nil {
 		return "", err
