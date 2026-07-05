@@ -6,11 +6,11 @@
     <a href="/LICENSE.md">
       <img alt="Software License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square">
     </a>
-    <a href="https://goreportcard.com/report/github.com/mattmc3/antibody">
-      <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/mattmc3/antibody?style=flat-square">
+    <a href="https://github.com/mattmc3/antibody/actions/workflows/ci.yml">
+      <img alt="CI Status" src="https://img.shields.io/github/actions/workflow/status/mattmc3/antibody/ci.yml?style=flat-square&label=CI">
     </a>
-    <a href="http://godoc.org/github.com/mattmc3/antibody">
-      <img alt="Go Doc" src="https://img.shields.io/badge/godoc-reference-blue.svg?style=flat-square">
+    <a href="https://pkg.go.dev/github.com/mattmc3/antibody">
+      <img alt="Go Reference" src="https://img.shields.io/badge/go.dev-reference-blue.svg?style=flat-square">
     </a>
   </p>
 </p>
@@ -19,6 +19,13 @@
 
 Antibody is a shell plugin manager made from the ground up thinking about
 performance.
+
+> [!NOTE]
+> This fork of [getantibody/antibody](https://github.com/getantibody/antibody) is
+> **ACTIVELY MAINTAINED**. While the upstream project is deprecated, this fork strives
+> for feature parity with [antidote](https://github.com/mattmc3/antidote), which is its
+> pure-Zsh successor. If you prefer a Go binary over a Zsh script, this is
+> the antibody version you're looking for.
 
 ## Quick Start
 
@@ -75,7 +82,9 @@ source ${ZDOTDIR:-$HOME}/.zsh_plugins.zsh
 - `antibody home` - Show antibody's home directory
 - `antibody list` - List installed plugins
 - `antibody path` - Show plugin path
+- `antibody purge` - Remove a plugin
 - `antibody init` - Initialize shell integration
+- `antibody completions` - Generate shell completion scripts
 
 ## Contributing
 
