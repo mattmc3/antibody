@@ -210,6 +210,36 @@ func TestFpathBeforeSource(t *testing.T) {
 	require.True(t, strings.HasPrefix(lines[1], "source "), "want source line second, got: %s", result)
 }
 
+func TestInitFileDirNamePriority(t *testing.T) {
+	home := home(t)
+	dir := filepath.Join(home, "myplug")
+	require.NoError(t, os.MkdirAll(dir, 0755))
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "myplug.plugin.zsh"), []byte(""), 0644))
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "other.plugin.zsh"), []byte(""), 0644))
+	b, err := New(home, dir)
+	require.NoError(t, err)
+	result, err := b.Get()
+	require.NoError(t, err)
+	require.Contains(t, result, "source "+filepath.Join(dir, "myplug.plugin.zsh"))
+	require.NotContains(t, result, "other.plugin.zsh")
+}
+
+func TestInitFileAssumeDefault(t *testing.T) {
+	home := home(t)
+	dir := filepath.Join(home, "myplug")
+	require.NoError(t, os.MkdirAll(dir, 0755))
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte(""), 0644))
+	b, err := New(home, dir)
+	require.NoError(t, err)
+	result, err := b.Get()
+	require.NoError(t, err)
+	require.Contains(t, result, "fpath+=( "+dir+" )")
+	require.Contains(t, result, "source "+filepath.Join(dir, "myplug.plugin.zsh"))
+}
+
 func home(t *testing.T) string {
 	home, err := os.MkdirTemp(os.TempDir(), "antibody")
 	require.NoError(t, err)
