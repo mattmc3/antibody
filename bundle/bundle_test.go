@@ -15,7 +15,7 @@ func TestSuccessfullGitBundles(t *testing.T) {
 	}{
 		{
 			"zsh-users/zsh-autosuggestions",
-			"zsh-autosuggestions.plugin.zsh\nfpath+=( ",
+			"\nsource ",
 		},
 		{
 			"zsh-users/zsh-autosuggestions kind:path",
@@ -195,6 +195,19 @@ func TestDeferLocalBundle(t *testing.T) {
 			require.False(t, strings.HasPrefix(line, "zsh-defer"), "fpath line should not be deferred: %q", line)
 		}
 	}
+}
+
+func TestFpathBeforeSource(t *testing.T) {
+	home := home(t)
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644))
+	b, err := New(home, home)
+	require.NoError(t, err)
+	result, err := b.Get()
+	require.NoError(t, err)
+	lines := strings.Split(result, "\n")
+	require.True(t, strings.HasPrefix(lines[0], "fpath+=( "), "want fpath line first, got: %s", result)
+	require.True(t, strings.HasPrefix(lines[1], "source "), "want source line second, got: %s", result)
 }
 
 func home(t *testing.T) string {

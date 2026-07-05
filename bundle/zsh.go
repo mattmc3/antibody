@@ -33,11 +33,10 @@ func (bundle zshBundle) Get() (result string, err error) {
 		if files == nil {
 			continue
 		}
-		var lines []string
+		lines := []string{fpathLine(bundle.Project.Path(), "")}
 		for _, file := range files {
 			lines = append(lines, "source "+file)
 		}
-		lines = append(lines, fpathLine(bundle.Project.Path(), ""))
 		return strings.Join(lines, "\n"), err
 	}
 
