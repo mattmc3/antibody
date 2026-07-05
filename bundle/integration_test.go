@@ -16,66 +16,6 @@ func skipShort(t *testing.T) {
 	}
 }
 
-func TestSuccessfullGitBundles(t *testing.T) {
-	skipShort(t)
-	table := []struct {
-		line, result string
-	}{
-		{
-			"zsh-users/zsh-autosuggestions",
-			"\nsource ",
-		},
-		{
-			"zsh-users/zsh-autosuggestions kind:path",
-			"export PATH=\"",
-		},
-		{
-			"mattmc3/antidote kind:path branch:v1",
-			"export PATH=\"",
-		},
-		{
-			"zsh-users/zsh-autosuggestions kind:clone",
-			"",
-		},
-		{
-			"zsh-users/zsh-autosuggestions kind:fpath",
-			"fpath+=( ",
-		},
-		{
-			"docker/cli path:contrib/completion/zsh/_docker",
-			"contrib/completion/zsh/_docker",
-		},
-		{
-			"zsh-users/zsh-autosuggestions kind:defer",
-			"zsh-defer source ",
-		},
-		{
-			"sorin-ionescu/prezto kind:autoload path:modules/helper/functions",
-			"builtin autoload -Uz ",
-		},
-	}
-	for _, row := range table {
-		t.Run(row.line, func(t *testing.T) {
-			t.Parallel()
-			home := home(t)
-			bundle, err := New(home, row.line)
-			require.NoError(t, err)
-			result, err := bundle.Get()
-			require.Contains(t, result, row.result)
-			require.NoError(t, err)
-		})
-	}
-}
-
-func TestZshInvalidGitBundle(t *testing.T) {
-	skipShort(t)
-	home := home(t)
-	bundle, err := New(home, "doesnotexist")
-	require.NoError(t, err)
-	_, err = bundle.Get()
-	require.Error(t, err)
-}
-
 func TestZshBundleWithNoShFiles(t *testing.T) {
 	skipShort(t)
 	home := home(t)

@@ -6,8 +6,65 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mattmc3/antibody/internal/gittest"
 	"github.com/stretchr/testify/require"
 )
+
+func TestSuccessfullGitBundles(t *testing.T) {
+	pluginSetup := func(r *gittest.Repo) {
+		r.WriteFile("myplugin.plugin.zsh", "echo myplugin\n")
+		r.Commit("add plugin file")
+	}
+	table := []struct {
+		name   string
+		args   string
+		setup  func(r *gittest.Repo)
+		result string
+	}{
+		{"zsh", "", pluginSetup, "\nsource "},
+		{"path", " kind:path", nil, "export PATH=\""},
+		{"path-branch", " kind:path branch:v1", func(r *gittest.Repo) {
+			r.Branch("v1")
+			r.WriteFile("v1.txt", "v1\n")
+			r.Commit("v1 work")
+			r.Checkout("main")
+		}, "export PATH=\""},
+		{"clone", " kind:clone", nil, ""},
+		{"fpath", " kind:fpath", nil, "fpath+=( "},
+		{"inner-path", " path:completions/_myfunc", func(r *gittest.Repo) {
+			r.WriteFile("completions/_myfunc", "#compdef myfunc\n")
+			r.Commit("add completion")
+		}, "completions/_myfunc"},
+		{"defer", " kind:defer", pluginSetup, "zsh-defer source "},
+		{"autoload", " kind:autoload path:functions", func(r *gittest.Repo) {
+			r.WriteFile("functions/myfunc", "echo myfunc\n")
+			r.Commit("add function")
+		}, "builtin autoload -Uz "},
+	}
+	for _, row := range table {
+		t.Run(row.name, func(t *testing.T) {
+			t.Parallel()
+			upstream := gittest.New(t)
+			if row.setup != nil {
+				row.setup(upstream)
+			}
+			home := home(t)
+			bundle, err := New(home, upstream.URL()+row.args)
+			require.NoError(t, err)
+			result, err := bundle.Get()
+			require.NoError(t, err)
+			require.Contains(t, result, row.result)
+		})
+	}
+}
+
+func TestZshInvalidGitBundle(t *testing.T) {
+	home := home(t)
+	bundle, err := New(home, "file:///this/path/does/not/exist")
+	require.NoError(t, err)
+	_, err = bundle.Get()
+	require.Error(t, err)
+}
 
 func TestZshLocalBundle(t *testing.T) {
 	home := home(t)
