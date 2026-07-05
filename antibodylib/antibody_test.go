@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mattmc3/antibody/internal/config"
 	"github.com/mattmc3/antibody/internal/gittest"
 	"github.com/stretchr/testify/require"
 )
@@ -110,7 +111,34 @@ func TestMultipleRepositories(t *testing.T) {
 	require.Len(t, files, 4)
 }
 
+// useDeferFixture points the config singleton at a local defer bundle so
+// the ensure block clones offline, restoring defaults when the test ends.
+func useDeferFixture(t *testing.T) *gittest.Repo {
+	t.Helper()
+	deferRepo := gittest.New(t)
+	deferRepo.WriteFile("zsh-defer.plugin.zsh", "echo defer\n")
+	deferRepo.Commit("add plugin file")
+
+	cfgDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(cfgDir, "antibody"), 0o755))
+	toml := "[defer]\nbundle = \"" + deferRepo.URL() + "\"\n"
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(cfgDir, "antibody", "antibody.toml"), []byte(toml), 0o644))
+
+	// Cleanup registered before Setenv so it runs after the env is
+	// restored, reloading the default config.
+	t.Cleanup(func() {
+		_, err := config.Load()
+		require.NoError(t, err)
+	})
+	t.Setenv("XDG_CONFIG_HOME", cfgDir)
+	_, err := config.Load()
+	require.NoError(t, err)
+	return deferRepo
+}
+
 func TestDeferEnsureInjectedOnce(t *testing.T) {
+	useDeferFixture(t)
 	rA := pluginRepo(t)
 	rB := pluginRepo(t)
 	home := home(t)

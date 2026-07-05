@@ -166,6 +166,42 @@ func TestDownloadPinnedToOlderCommit(t *testing.T) {
 	require.True(t, strings.HasPrefix(oldSHA, cloneSHA))
 }
 
+func TestDownloadBranchTag(t *testing.T) {
+	upstream := gittest.New(t)
+	tagSHA := upstream.HEAD()
+	upstream.Tag("v1.0.0")
+	upstream.WriteFile("new.txt", "new\n")
+	upstream.Commit("after tag")
+	home := home(t)
+	repo := NewGit(home, upstream.URL()+" branch:v1.0.0")
+	require.NoError(t, repo.Download())
+	cloneSHA, err := commit(repo.Path())
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(tagSHA, cloneSHA))
+}
+
+func TestDownloadAdvancePin(t *testing.T) {
+	upstream := gittest.New(t)
+	upstream.Config("uploadpack.allowAnySHA1InWant", "true")
+	oldSHA := upstream.HEAD()
+	upstream.WriteFile("new.txt", "new\n")
+	newSHA := upstream.Commit("second")
+	home := home(t)
+
+	oldPin := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), oldSHA))
+	require.NoError(t, oldPin.Download())
+	newPin := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), newSHA))
+	require.NoError(t, newPin.Download())
+
+	require.NotEqual(t, oldPin.Path(), newPin.Path())
+	for repo, sha := range map[Project]string{oldPin: oldSHA, newPin: newSHA} {
+		cloneSHA, err := commit(repo.Path())
+		require.NoError(t, err)
+		require.True(t, strings.HasPrefix(sha, cloneSHA))
+	}
+	require.NoError(t, Update(home, 1))
+}
+
 func TestDownloadClearsStalePin(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)

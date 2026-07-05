@@ -57,6 +57,19 @@ func TestUpdateHomeWithNoGitProjects(t *testing.T) {
 	require.Error(t, Update(home, runtime.NumCPU()))
 }
 
+func TestSymlinkedHome(t *testing.T) {
+	real := t.TempDir()
+	link := filepath.Join(t.TempDir(), "antibody-home")
+	require.NoError(t, os.Symlink(real, link))
+	upstream := gittest.New(t)
+	repo := NewGit(link, upstream.URL())
+	require.NoError(t, repo.Download())
+	list, err := List(link)
+	require.NoError(t, err)
+	require.Len(t, list, 1)
+	require.NoError(t, Update(link, 1))
+}
+
 func TestListEmptyFolder(t *testing.T) {
 	home := home(t)
 	list, err := List(home)

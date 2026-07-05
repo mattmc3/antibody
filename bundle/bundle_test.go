@@ -136,6 +136,28 @@ func TestDecoratedLocalBundle(t *testing.T) {
 	})
 }
 
+func TestQuotedAnnotationValues(t *testing.T) {
+	home := home(t)
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644))
+
+	t.Run("double quotes", func(t *testing.T) {
+		b, err := New(home, home+` pre:"echo hello world"`)
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.True(t, strings.HasPrefix(result, "echo hello world\n"), "got: %s", result)
+	})
+
+	t.Run("single quotes", func(t *testing.T) {
+		b, err := New(home, home+" post:'echo bye bye'")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.True(t, strings.HasSuffix(result, "\necho bye bye"), "got: %s", result)
+	})
+}
+
 func TestFpathRuleAnnotation(t *testing.T) {
 	home := home(t)
 	b, err := New(home, home+" kind:fpath fpath-rule:prepend")
