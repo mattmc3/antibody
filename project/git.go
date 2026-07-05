@@ -146,7 +146,6 @@ func (g gitProject) Download() error {
 		cmd.Env = gitCmdEnv
 
 		if bts, err := cmd.CombinedOutput(); err != nil {
-			log.Println("git clone failed for", g.URL, string(bts))
 			return fmt.Errorf("git clone failed: %w: %s", err, strings.TrimSpace(string(bts)))
 		}
 	}
@@ -184,8 +183,7 @@ func (g gitProject) Update() error {
 
 	cmd.Dir = g.folder
 	if bts, err := cmd.CombinedOutput(); err != nil {
-		log.Println("git update failed for", g.folder, string(bts))
-		return err
+		return fmt.Errorf("git update failed: %w: %s", err, strings.TrimSpace(string(bts)))
 	}
 	rev, err := commit(g.folder)
 	if err != nil {
@@ -253,8 +251,7 @@ func (g gitProject) ensurePinned() error {
 		cmd.Dir = g.folder
 		cmd.Env = gitCmdEnv
 		if bts, ferr := cmd.CombinedOutput(); ferr != nil {
-			log.Println("git fetch failed for", g.folder, string(bts))
-			return err
+			return fmt.Errorf("git fetch failed: %w: %s", ferr, strings.TrimSpace(string(bts)))
 		}
 		if err = gitCheckoutDetach(g.folder, g.Pin); err != nil {
 			return err
