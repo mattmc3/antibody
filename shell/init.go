@@ -18,10 +18,13 @@ antibody() {
 	esac
 }
 
-_antibody() {
-	IFS=' ' read -A reply <<< "help bundle update home purge list init"
-}
-compctl -K _antibody antibody
+if ! (( $+functions[_antibody] )); then
+	if (( $+functions[compdef] )); then
+		source <( {{ . }} completions zsh )
+	else
+		fpath=("${$( {{ . }} completions --fpath zsh ):h}" $fpath)
+	fi
+fi
 `
 
 // Init returns the shell that should be loaded to antibody to work correctly.

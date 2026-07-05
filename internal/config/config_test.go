@@ -144,6 +144,18 @@ func TestConfig_DeferBundle(t *testing.T) {
 	require.Equal(t, "myorg/my-defer", (&Config{Defer: deferConfig{Bundle: "myorg/my-defer"}}).DeferBundle())
 }
 
+func TestConfig_Compdir(t *testing.T) {
+	require.Equal(t, "", (&Config{}).Compdir())
+	cfg := &Config{Completions: completionsConfig{Dir: "/tmp/comps"}}
+	require.Equal(t, "/tmp/comps", cfg.Compdir())
+}
+
+func TestConfig_Compdir_Tilde(t *testing.T) {
+	cfg := &Config{Completions: completionsConfig{Dir: "~/comps"}}
+	home, _ := os.UserHomeDir()
+	require.Equal(t, filepath.Join(home, "comps"), cfg.Compdir())
+}
+
 func TestConfig_HomeDir_Default(t *testing.T) {
 	t.Setenv("ANTIBODY_HOME", "")
 	cfg := &Config{}

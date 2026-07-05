@@ -36,9 +36,15 @@ var (
 	purgeCmd  = app.Command("purge", "purges a bundle from your computer")
 	purgee    = purgeCmd.Arg("bundle", "bundle to be purged").Required().String()
 	listCmd   = app.Command("list", "lists all currently installed bundles").Alias("ls")
+	listDirs  = listCmd.Flag("dirs", "show bundle directory paths").Short('d').Bool()
+	listURL   = listCmd.Flag("url", "show bundle URLs only").Short('u').Bool()
 	pathCmd   = app.Command("path", "prints the path of a currently cloned bundle")
 	pathee    = pathCmd.Arg("bundle", "bundle in which to find and print cloned path").Required().String()
 	initCmd   = app.Command("init", "initializes the shell so Antibody can work as expected")
+
+	completionsCmd   = app.Command("completions", "generates shell completion scripts")
+	completionsFor   = completionsCmd.Arg("shell", "shell to generate completions for").Required().String()
+	completionsFpath = completionsCmd.Flag("fpath", "write the script to the completions dir and print the file path").Bool()
 )
 
 // nolint: gochecknoinits
@@ -74,6 +80,16 @@ func main() {
 		sh, err := shell.Init()
 		app.FatalIfError(err, "failed to init")
 		fmt.Println(sh)
+	case completionsCmd.FullCommand():
+		if *completionsFpath {
+			file, err := shell.CompletionsFpath(*completionsFor)
+			app.FatalIfError(err, "failed to generate completions")
+			fmt.Println(file)
+		} else {
+			sh, err := shell.Completions(*completionsFor)
+			app.FatalIfError(err, "failed to generate completions")
+			fmt.Println(sh)
+		}
 	}
 }
 
@@ -124,13 +140,25 @@ func list() {
 	var home = findHome()
 	projects, err := project.List(home)
 	app.FatalIfError(err, "failed to list bundles")
-	w := tabwriter.NewWriter(os.Stdout, 0, 1, 4, ' ', tabwriter.TabIndent)
-	for _, b := range projects {
-		if _, err := fmt.Fprintf(w, "%s\t%s\n", project.EscapedPathToURL(b), filepath.Join(home, b)); err != nil {
-			app.FatalIfError(err, "failed to write")
+
+	switch {
+	case *listDirs:
+		for _, b := range projects {
+			fmt.Println(filepath.Join(home, b))
 		}
+	case *listURL:
+		for _, b := range projects {
+			fmt.Println(project.EscapedPathToURL(b))
+		}
+	default:
+		w := tabwriter.NewWriter(os.Stdout, 0, 1, 4, ' ', tabwriter.TabIndent)
+		for _, b := range projects {
+			if _, err := fmt.Fprintf(w, "%s\t%s\n", project.EscapedPathToURL(b), filepath.Join(home, b)); err != nil {
+				app.FatalIfError(err, "failed to write")
+			}
+		}
+		app.FatalIfError(w.Flush(), "failed to flush")
 	}
-	app.FatalIfError(w.Flush(), "failed to flush")
 }
 
 func path() {

@@ -10,6 +10,10 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+type completionsConfig struct {
+	Dir string `toml:"dir"`
+}
+
 type deferConfig struct {
 	Bundle string `toml:"bundle"`
 }
@@ -29,10 +33,11 @@ type homeConfig struct {
 
 // Config holds the antibody configuration.
 type Config struct {
-	Defer deferConfig `toml:"defer"`
-	Fpath fpathConfig `toml:"fpath"`
-	Git   gitConfig   `toml:"git"`
-	Home  homeConfig  `toml:"home"`
+	Completions completionsConfig `toml:"completions"`
+	Defer       deferConfig       `toml:"defer"`
+	Fpath       fpathConfig       `toml:"fpath"`
+	Git         gitConfig         `toml:"git"`
+	Home        homeConfig        `toml:"home"`
 }
 
 // nolint: gochecknoglobals
@@ -79,6 +84,12 @@ func Get() *Config {
 		instance = &Config{}
 	}
 	return instance
+}
+
+// Compdir returns the config [completions] dir with ~ expanded,
+// or "" when not configured.
+func (c *Config) Compdir() string {
+	return expandTilde(c.Completions.Dir)
 }
 
 // DeferBundle returns the bundle spec for the zsh-defer tool,
@@ -144,18 +155,18 @@ func (c *Config) HomeDir() (string, error) {
 
 // configHomeDir returns the config [home] dir with ~ expanded.
 func (c *Config) configHomeDir() string {
-	dir := c.Home.Dir
-	if dir == "" {
-		return ""
+	return expandTilde(c.Home.Dir)
+}
+
+func expandTilde(dir string) string {
+	if !strings.HasPrefix(dir, "~/") {
+		return dir
 	}
-	if strings.HasPrefix(dir, "~/") {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return dir
-		}
-		return filepath.Join(home, dir[2:])
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return dir
 	}
-	return dir
+	return filepath.Join(home, dir[2:])
 }
 
 func configPath() (string, error) {

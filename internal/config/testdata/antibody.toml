@@ -1,5 +1,10 @@
 # ~/.config/antibody/antibody.toml
 
+[completions]
+# dir overrides where the _antibody completion file is written.
+# Default: ${ZDOTDIR:-${XDG_CONFIG_HOME:-~/.config}}/completions
+# dir = "~/.zcomp"
+
 [defer]
 # bundle is the zsh-defer plugin used for kind:defer bundles.
 bundle = "romkatv/zsh-defer"
