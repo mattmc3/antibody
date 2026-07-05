@@ -53,17 +53,3 @@ func TestDownloadSubmodules(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, len(files) > 1)
 }
-
-func TestDownloadNonExistentRepo(t *testing.T) {
-	skipShort(t)
-	home := home(t)
-	repo := NewGit(home, "zsh-users/not-a-real-repo")
-	require.Error(t, repo.Download())
-}
-
-func TestDownloadMalformedRepo(t *testing.T) {
-	skipShort(t)
-	home := home(t)
-	repo := NewGit(home, "doesn-not-exist-really branch:also-nope")
-	require.Error(t, repo.Download())
-}

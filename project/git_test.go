@@ -125,6 +125,107 @@ func TestMultipleSubFolders(t *testing.T) {
 	}, "\n")).Download())
 }
 
+func TestUpdatePullsUpstreamCommit(t *testing.T) {
+	upstream := gittest.New(t)
+	home := home(t)
+	repo := NewGit(home, upstream.URL())
+	require.NoError(t, repo.Download())
+	upstream.WriteFile("new.txt", "new\n")
+	newSHA := upstream.Commit("upstream work")
+	require.NoError(t, repo.Update())
+	cloneSHA, err := commit(repo.Path())
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(newSHA, cloneSHA))
+}
+
+func TestUpdateSkipsPinnedRepo(t *testing.T) {
+	upstream := gittest.New(t)
+	sha := upstream.HEAD()
+	home := home(t)
+	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
+	require.NoError(t, repo.Download())
+	upstream.WriteFile("new.txt", "new\n")
+	upstream.Commit("upstream work")
+	require.NoError(t, Update(home, 1))
+	cloneSHA, err := commit(repo.Path())
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(sha, cloneSHA))
+}
+
+func TestDownloadPinnedToOlderCommit(t *testing.T) {
+	upstream := gittest.New(t)
+	upstream.Config("uploadpack.allowAnySHA1InWant", "true")
+	oldSHA := upstream.HEAD()
+	upstream.WriteFile("new.txt", "new\n")
+	upstream.Commit("newer work")
+	home := home(t)
+	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), oldSHA))
+	require.NoError(t, repo.Download())
+	cloneSHA, err := commit(repo.Path())
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(oldSHA, cloneSHA))
+}
+
+func TestDownloadClearsStalePin(t *testing.T) {
+	upstream := gittest.New(t)
+	home := home(t)
+	repo := NewGit(home, upstream.URL())
+	require.NoError(t, repo.Download())
+	require.NoError(t, gitConfigSet(repo.Path(), "antibody.pin", upstream.HEAD()))
+	require.NoError(t, repo.Download())
+	_, err := gitConfigGet(repo.Path(), "antibody.pin")
+	require.Error(t, err)
+	upstream.WriteFile("new.txt", "new\n")
+	newSHA := upstream.Commit("upstream work")
+	require.NoError(t, Update(home, 1))
+	cloneSHA, err := commit(repo.Path())
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(newSHA, cloneSHA))
+}
+
+// Characterizes current behavior: an existing clone is never re-cloned or
+// switched, so a changed branch: annotation is ignored.
+func TestDownloadExistingCloneIgnoresBranchChange(t *testing.T) {
+	upstream := gittest.New(t)
+	mainSHA := upstream.HEAD()
+	upstream.Branch("v1")
+	upstream.WriteFile("v1.txt", "v1\n")
+	upstream.Commit("v1 work")
+	upstream.Checkout("main")
+	home := home(t)
+	require.NoError(t, NewGit(home, upstream.URL()).Download())
+	repo := NewGit(home, upstream.URL()+" branch:v1")
+	require.NoError(t, repo.Download())
+	cloneSHA, err := commit(repo.Path())
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(mainSHA, cloneSHA))
+}
+
+// Characterizes a latent shallow-clone bug: after an upstream history
+// rewrite, a depth-1 clone cannot pull and Update errors.
+func TestUpdateAfterUpstreamRewriteFails(t *testing.T) {
+	upstream := gittest.New(t)
+	home := home(t)
+	repo := NewGit(home, upstream.URL())
+	require.NoError(t, repo.Download())
+	upstream.WriteFile("new.txt", "new\n")
+	upstream.Amend("rewritten history")
+	require.Error(t, repo.Update())
+}
+
+func TestDownloadNonExistentRepo(t *testing.T) {
+	home := home(t)
+	repo := NewGit(home, "file:///this/path/does/not/exist")
+	require.Error(t, repo.Download())
+}
+
+func TestDownloadNonExistentBranch(t *testing.T) {
+	upstream := gittest.New(t)
+	home := home(t)
+	repo := NewGit(home, upstream.URL()+" branch:also-nope")
+	require.Error(t, repo.Download())
+}
+
 func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)

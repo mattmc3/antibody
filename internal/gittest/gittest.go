@@ -78,6 +78,21 @@ func (r *Repo) Tag(name string) {
 	r.git("tag", name)
 }
 
+// Config sets a git config value on the repo.
+func (r *Repo) Config(key, value string) {
+	r.t.Helper()
+	r.git("config", key, value)
+}
+
+// Amend rewrites the last commit, returning the new HEAD SHA. Useful for
+// simulating upstream history rewrites.
+func (r *Repo) Amend(message string) string {
+	r.t.Helper()
+	r.git("add", "--all")
+	r.git("commit", "--amend", "-m", message)
+	return r.HEAD()
+}
+
 // HEAD returns the full SHA of the current HEAD commit.
 func (r *Repo) HEAD() string {
 	r.t.Helper()
