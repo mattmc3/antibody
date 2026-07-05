@@ -8,8 +8,125 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mattmc3/antibody/internal/gittest"
 	"github.com/stretchr/testify/require"
 )
+
+// escapedDir returns the clone folder a URL lands in under home.
+func escapedDir(home, url string) string {
+	return filepath.Join(home, strings.NewReplacer(
+		":", "-COLON-", "/", "-SLASH-", "@", "-AT-",
+	).Replace(url))
+}
+
+// pluginRepo builds a repo containing a sourceable plugin init file.
+func pluginRepo(t *testing.T) *gittest.Repo {
+	t.Helper()
+	r := gittest.New(t)
+	r.WriteFile("myplugin.plugin.zsh", "echo myplugin\n")
+	r.Commit("add plugin file")
+	return r
+}
+
+func TestAntibody(t *testing.T) {
+	rPath := gittest.New(t)
+	rBranch := gittest.New(t)
+	rBranch.Branch("v1")
+	rBranch.WriteFile("v1.txt", "v1\n")
+	rBranch.Commit("v1 work")
+	rBranch.Checkout("main")
+	rZsh := pluginRepo(t)
+
+	home := home(t)
+	bundles := []string{
+		"# comments also are allowed",
+		rPath.URL() + " kind:path # comment at the end of the line",
+		rBranch.URL() + " kind:path branch:v1",
+		rZsh.URL() + "     kind:zsh",
+		"",
+		"        ",
+		"  # trick play",
+		"/tmp kind:path",
+	}
+	sh, err := New(
+		home,
+		bytes.NewBufferString(strings.Join(bundles, "\n")),
+		runtime.NumCPU(),
+	).Bundle()
+	require.NoError(t, err)
+	files, err := os.ReadDir(home)
+	require.NoError(t, err)
+	require.Len(t, files, 3)
+	require.Contains(t, sh, `export PATH="/tmp:$PATH"`)
+	require.Contains(t, sh, `export PATH="`+escapedDir(home, rPath.URL())+`:$PATH"`)
+	require.Contains(t, sh, `export PATH="`+escapedDir(home, rBranch.URL())+`:$PATH"`)
+	require.Contains(t, sh, `source `+filepath.Join(escapedDir(home, rZsh.URL()), "myplugin.plugin.zsh"))
+}
+
+func TestAntibodyError(t *testing.T) {
+	home := home(t)
+	bundles := bytes.NewBufferString("file:///this/path/does/not/exist")
+	sh, err := New(home, bundles, runtime.NumCPU()).Bundle()
+	require.Error(t, err)
+	require.Empty(t, sh)
+}
+
+func TestMultipleRepositories(t *testing.T) {
+	rPath := gittest.New(t)
+	rDupe := pluginRepo(t)
+	rInner := gittest.New(t)
+	rInner.WriteFile("plugins/a/a.plugin.zsh", "echo a\n")
+	rInner.WriteFile("plugins/b/b.plugin.zsh", "echo b\n")
+	rInner.Commit("add plugins")
+	rLast := pluginRepo(t)
+
+	home := home(t)
+	bundles := []string{
+		"# this block is in alphabetic order",
+		rPath.URL() + " kind:path",
+		rDupe.URL(),
+		rDupe.URL(),
+		"",
+		rInner.URL() + " path:plugins/a",
+		rInner.URL() + " path:plugins/b",
+		"# these should be at last!",
+		rLast.URL(),
+	}
+	sh, err := New(
+		home,
+		bytes.NewBufferString(strings.Join(bundles, "\n")),
+		runtime.NumCPU(),
+	).Bundle()
+	require.NoError(t, err)
+	// path repo: 1 line; dupe twice: 4; two inner paths: 4; last: 2
+	require.Len(t, strings.Split(sh, "\n"), 11)
+	require.True(
+		t,
+		strings.HasSuffix(sh, filepath.Join(escapedDir(home, rLast.URL()), "myplugin.plugin.zsh")),
+		"last bundle should come last, got: %s", sh,
+	)
+	files, err := os.ReadDir(home)
+	require.NoError(t, err)
+	require.Len(t, files, 4)
+}
+
+func TestDeferEnsureInjectedOnce(t *testing.T) {
+	rA := pluginRepo(t)
+	rB := pluginRepo(t)
+	home := home(t)
+	bundles := []string{
+		rA.URL() + " kind:defer",
+		rB.URL() + " kind:defer",
+	}
+	sh, err := New(
+		home,
+		bytes.NewBufferString(strings.Join(bundles, "\n")),
+		runtime.NumCPU(),
+	).Bundle()
+	require.NoError(t, err)
+	require.Equal(t, 1, strings.Count(sh, "if ! (( $+functions[zsh-defer] )); then"))
+	require.Equal(t, 2, strings.Count(sh, "zsh-defer source "))
+}
 
 func TestUsingDirective(t *testing.T) {
 	home := home(t)
