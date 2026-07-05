@@ -91,7 +91,13 @@ func bundleFromParsed(parsed bundleparse.Bundle, proj project.Project) (Bundle, 
 	}
 
 	if parsed.Pre != "" || parsed.Post != "" || parsed.Conditional != "" {
-		b = decoratedBundle{inner: b, pre: parsed.Pre, post: parsed.Post, conditional: parsed.Conditional}
+		b = decoratedBundle{
+			inner:       b,
+			pre:         parsed.Pre,
+			post:        parsed.Post,
+			conditional: parsed.Conditional,
+			deferPost:   parsed.Kind == bundleparse.KindDefer,
+		}
 	}
 
 	return b, nil
@@ -104,6 +110,7 @@ type decoratedBundle struct {
 	pre         string
 	post        string
 	conditional string
+	deferPost   bool
 }
 
 func (b decoratedBundle) Get() (result string, err error) {
@@ -120,7 +127,11 @@ func (b decoratedBundle) Get() (result string, err error) {
 		lines = append(lines, inner)
 	}
 	if b.post != "" {
-		lines = append(lines, b.post)
+		post := b.post
+		if b.deferPost {
+			post = "zsh-defer " + post
+		}
+		lines = append(lines, post)
 	}
 	result = strings.Join(lines, "\n")
 

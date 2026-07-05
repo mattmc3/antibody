@@ -266,6 +266,17 @@ func TestInitFileAssumeDefault(t *testing.T) {
 	require.Contains(t, result, "source "+filepath.Join(dir, "myplug.plugin.zsh"))
 }
 
+func TestDeferredPost(t *testing.T) {
+	home := home(t)
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644))
+	b, err := New(home, home+" kind:defer post:my_post_cmd")
+	require.NoError(t, err)
+	result, err := b.Get()
+	require.NoError(t, err)
+	require.True(t, strings.HasSuffix(result, "\nzsh-defer my_post_cmd"), "post should be deferred, got: %s", result)
+}
+
 func home(t *testing.T) string {
 	home, err := os.MkdirTemp(os.TempDir(), "antibody")
 	require.NoError(t, err)
