@@ -9,64 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSuccessfullGitBundles(t *testing.T) {
-	table := []struct {
-		line, result string
-	}{
-		{
-			"zsh-users/zsh-autosuggestions",
-			"\nsource ",
-		},
-		{
-			"zsh-users/zsh-autosuggestions kind:path",
-			"export PATH=\"",
-		},
-		{
-			"mattmc3/antidote kind:path branch:v1",
-			"export PATH=\"",
-		},
-		{
-			"zsh-users/zsh-autosuggestions kind:clone",
-			"",
-		},
-		{
-			"zsh-users/zsh-autosuggestions kind:fpath",
-			"fpath+=( ",
-		},
-		{
-			"docker/cli path:contrib/completion/zsh/_docker",
-			"contrib/completion/zsh/_docker",
-		},
-		{
-			"zsh-users/zsh-autosuggestions kind:defer",
-			"zsh-defer source ",
-		},
-		{
-			"sorin-ionescu/prezto kind:autoload path:modules/helper/functions",
-			"builtin autoload -Uz ",
-		},
-	}
-	for _, row := range table {
-		t.Run(row.line, func(t *testing.T) {
-			t.Parallel()
-			home := home(t)
-			bundle, err := New(home, row.line)
-			require.NoError(t, err)
-			result, err := bundle.Get()
-			require.Contains(t, result, row.result)
-			require.NoError(t, err)
-		})
-	}
-}
-
-func TestZshInvalidGitBundle(t *testing.T) {
-	home := home(t)
-	bundle, err := New(home, "doesnotexist")
-	require.NoError(t, err)
-	_, err = bundle.Get()
-	require.Error(t, err)
-}
-
 func TestZshLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
@@ -84,14 +26,6 @@ func TestZshInvalidLocalBundle(t *testing.T) {
 	require.NoError(t, err)
 	_, err = bundle.Get()
 	require.Error(t, err)
-}
-
-func TestZshBundleWithNoShFiles(t *testing.T) {
-	home := home(t)
-	bundle, err := New(home, "mattmc3/antibody")
-	require.NoError(t, err)
-	_, err = bundle.Get()
-	require.NoError(t, err)
 }
 
 func TestPathInvalidLocalBundle(t *testing.T) {

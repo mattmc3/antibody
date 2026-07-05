@@ -27,9 +27,19 @@ build-bin-container:
 ci-container:
     just container "go build && go test -v ./... && golangci-lint run ./..."
 
-# Run all the tests
-test:
-    go test {{TEST_OPTIONS}} -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt {{SOURCE_FILES}} -run {{TEST_PATTERN}} -timeout=2m
+# Run tests (scope: "unit" skips network tests, "all" runs everything)
+test scope="unit":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{scope}}" in
+        unit)
+            go test {{TEST_OPTIONS}} -failfast -race -short -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt {{SOURCE_FILES}} -run {{TEST_PATTERN}} -timeout=2m ;;
+        all)
+            go test {{TEST_OPTIONS}} -failfast -race -coverpkg=./... -covermode=atomic -coverprofile=coverage.txt {{SOURCE_FILES}} -run {{TEST_PATTERN}} -timeout=5m ;;
+        *)
+            echo "just: invalid scope '{{scope}}', expected 'unit' or 'all'" >&2
+            exit 1 ;;
+    esac
 
 # Run all the tests and opens the coverage report
 cover: test
