@@ -1,6 +1,8 @@
 package bundle
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/getantidote/bundleparse"
@@ -33,6 +35,9 @@ func New(home, line string) (Bundle, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := validatePin(parsed); err != nil {
+		return nil, err
+	}
 
 	proj, err := project.New(home, line)
 	if err != nil {
@@ -49,6 +54,9 @@ func New(home, line string) (Bundle, error) {
 func NewFromParsed(home string, parsed bundleparse.Bundle) (Bundle, error) {
 	if parsed.Name == "" {
 		return nil, nil
+	}
+	if err := validatePin(parsed); err != nil {
+		return nil, err
 	}
 
 	var proj project.Project
@@ -101,6 +109,20 @@ func bundleFromParsed(parsed bundleparse.Bundle, proj project.Project) (Bundle, 
 	}
 
 	return b, nil
+}
+
+var pinSHAPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
+
+// validatePin requires full 40-character commit SHAs for repo bundles.
+// Local bundles ignore pins.
+func validatePin(parsed bundleparse.Bundle) error {
+	if parsed.Pin == "" || strings.HasPrefix(parsed.Name, "/") || strings.HasPrefix(parsed.Name, "~/") {
+		return nil
+	}
+	if !pinSHAPattern.MatchString(parsed.Pin) {
+		return fmt.Errorf("pin requires a full 40-character commit SHA, got %q", parsed.Pin)
+	}
+	return nil
 }
 
 // decoratedBundle wraps a bundle with optional pre/post commands and a

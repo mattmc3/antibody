@@ -277,6 +277,13 @@ func TestDeferredPost(t *testing.T) {
 	require.True(t, strings.HasSuffix(result, "\nzsh-defer my_post_cmd"), "post should be deferred, got: %s", result)
 }
 
+func TestPinRequiresFullSHA(t *testing.T) {
+	home := home(t)
+	_, err := New(home, "owner/repo pin:abc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "40-character")
+}
+
 func home(t *testing.T) string {
 	home, err := os.MkdirTemp(os.TempDir(), "antibody")
 	require.NoError(t, err)
