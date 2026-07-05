@@ -105,6 +105,45 @@ func TestDeferEnsureInjectedOnce(t *testing.T) {
 	require.Contains(t, sh, "zsh-defer source ")
 }
 
+// TestBundleLargeCorpus clones every repo in scripts/profiling/bundles.txt
+// and verifies each active line produces at least one source statement.
+// Repos without a canonical init file source every glob match, so the
+// number of source lines can exceed the number of bundles.
+func TestBundleLargeCorpus(t *testing.T) {
+	skipShort(t)
+	corpus, err := os.ReadFile("../scripts/profiling/bundles.txt")
+	require.NoError(t, err)
+
+	active := 0
+	for _, line := range strings.Split(string(corpus), "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			active++
+		}
+	}
+	require.Greater(t, active, 100, "corpus unexpectedly small")
+
+	home := home()
+	sh, err := New(
+		home,
+		bytes.NewBuffer(corpus),
+		runtime.NumCPU(),
+	).Bundle()
+	require.NoError(t, err)
+
+	sources := 0
+	for _, line := range strings.Split(sh, "\n") {
+		if strings.HasPrefix(line, "source ") {
+			sources++
+		}
+	}
+	require.GreaterOrEqual(t, sources, active)
+
+	cloned, err := os.ReadDir(home)
+	require.NoError(t, err)
+	require.Len(t, cloned, active)
+}
+
 // BenchmarkDownload-8   	       1	2907868713 ns/op	  480296 B/op	    2996 allocs/op v1
 // BenchmarkDownload-8   	       1	2708120385 ns/op	  475904 B/op	    3052 allocs/op v2
 func BenchmarkDownload(b *testing.B) {
