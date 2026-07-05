@@ -22,6 +22,7 @@ func (bundle fpathBundle) Get() (result string, err error) {
 // fpathLine returns the appropriate fpath assignment for a directory.
 // If rule is empty the global config value is used.
 func fpathLine(dir, rule string) string {
+	dir = displayPath(dir)
 	if resolvedFpathRule(rule) == "prepend" {
 		return fmt.Sprintf("fpath=( %s $fpath )", dir)
 	}

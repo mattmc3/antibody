@@ -24,7 +24,7 @@ func (bundle zshBundle) Get() (result string, err error) {
 	// it is a file, not a folder, so just return it
 	if info.Mode().IsRegular() {
 		// XXX: should we add the parent folder to fpath too?
-		return "source " + dir, nil
+		return "source " + displayPath(dir), nil
 	}
 	files, err := initFiles(dir)
 	if err != nil {
@@ -32,7 +32,7 @@ func (bundle zshBundle) Get() (result string, err error) {
 	}
 	lines := []string{fpathLine(dir, "")}
 	for _, file := range files {
-		lines = append(lines, "source "+file)
+		lines = append(lines, "source "+displayPath(file))
 	}
 	return strings.Join(lines, "\n"), nil
 }
@@ -66,4 +66,20 @@ func initFileBase(dir string) string {
 		base = base[i+1:]
 	}
 	return base
+}
+
+// displayPath replaces the user's home dir prefix with a literal $HOME so
+// generated static files are portable.
+func displayPath(p string) string {
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return p
+	}
+	if p == home {
+		return "$HOME"
+	}
+	if strings.HasPrefix(p, home+string(filepath.Separator)) {
+		return "$HOME" + p[len(home):]
+	}
+	return p
 }

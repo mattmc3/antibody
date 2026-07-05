@@ -210,6 +210,32 @@ func TestFpathBeforeSource(t *testing.T) {
 	require.True(t, strings.HasPrefix(lines[1], "source "), "want source line second, got: %s", result)
 }
 
+func TestHomeSubstitution(t *testing.T) {
+	fakeHome := t.TempDir()
+	t.Setenv("HOME", fakeHome)
+	plugin := filepath.Join(fakeHome, "myplugin")
+	require.NoError(t, os.MkdirAll(plugin, 0755))
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(plugin, "myplugin.plugin.zsh"), []byte(""), 0644))
+
+	t.Run("zsh", func(t *testing.T) {
+		b, err := New(fakeHome, plugin)
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.Contains(t, result, "fpath+=( $HOME/myplugin )")
+		require.Contains(t, result, "source $HOME/myplugin/myplugin.plugin.zsh")
+	})
+
+	t.Run("path", func(t *testing.T) {
+		b, err := New(fakeHome, plugin+" kind:path")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.Equal(t, `export PATH="$HOME/myplugin:$PATH"`, result)
+	})
+}
+
 func TestInitFileDirNamePriority(t *testing.T) {
 	home := home(t)
 	dir := filepath.Join(home, "myplug")
