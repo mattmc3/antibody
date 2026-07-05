@@ -2,10 +2,13 @@ package project
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/mattmc3/antibody/internal/config"
 	"github.com/mattmc3/antibody/internal/gittest"
 	"github.com/stretchr/testify/require"
 )
@@ -24,6 +27,90 @@ func TestDownloadFolderNaming(t *testing.T) {
 		home+"/https-COLON--SLASH--SLASH-github.com-SLASH-zsh-users-SLASH-zsh-completions",
 		repo.Path(),
 	)
+}
+
+func TestDownloadFolderNamingURLForms(t *testing.T) {
+	home := home(t)
+	table := []struct{ line, folder string }{
+		{
+			"zsh-users/zsh-completions",
+			"https-COLON--SLASH--SLASH-github.com-SLASH-zsh-users-SLASH-zsh-completions",
+		},
+		{
+			"http://github.com/foo/bar",
+			"http-COLON--SLASH--SLASH-github.com-SLASH-foo-SLASH-bar",
+		},
+		{
+			"https://github.com/foo/bar.git",
+			"https-COLON--SLASH--SLASH-github.com-SLASH-foo-SLASH-bar.git",
+		},
+		{
+			"git://github.com/foo/bar",
+			"git-COLON--SLASH--SLASH-github.com-SLASH-foo-SLASH-bar",
+		},
+		{
+			"ssh://git@github.com/foo/bar",
+			"ssh-COLON--SLASH--SLASH-git-AT-github.com-SLASH-foo-SLASH-bar",
+		},
+		{
+			"git@github.com:foo/bar.git",
+			"ssh-COLON--SLASH--SLASH-git-AT-github.com-SLASH-foo-SLASH-bar.git",
+		},
+		{
+			"file:///tmp/foo",
+			"file-COLON--SLASH--SLASH--SLASH-tmp-SLASH-foo",
+		},
+	}
+	for _, row := range table {
+		t.Run(row.line, func(t *testing.T) {
+			require.Equal(t, home+"/"+row.folder, NewGit(home, row.line).Path())
+		})
+	}
+}
+
+// useConfig points the config singleton at a fixture toml, restoring
+// defaults when the test ends.
+func useConfig(t *testing.T, toml string) {
+	t.Helper()
+	cfgDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(cfgDir, "antibody"), 0o755))
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(cfgDir, "antibody", "antibody.toml"), []byte(toml), 0o644))
+	// Cleanup registered before Setenv so it runs after the env is
+	// restored, reloading the default config.
+	t.Cleanup(func() {
+		_, err := config.Load()
+		require.NoError(t, err)
+	})
+	t.Setenv("XDG_CONFIG_HOME", cfgDir)
+	_, err := config.Load()
+	require.NoError(t, err)
+}
+
+func TestFolderNamingSSHProtocol(t *testing.T) {
+	useConfig(t, "[git]\nprotocol = \"ssh\"\n")
+	home := home(t)
+	require.Equal(
+		t,
+		home+"/ssh-COLON--SLASH--SLASH-git-AT-github.com-SLASH-foo-SLASH-bar",
+		NewGit(home, "foo/bar").Path(),
+	)
+}
+
+func TestFolderNamingCustomDomain(t *testing.T) {
+	useConfig(t, "[git]\ndomain = \"gitlab.com\"\n")
+	home := home(t)
+	require.Equal(
+		t,
+		home+"/https-COLON--SLASH--SLASH-gitlab.com-SLASH-foo-SLASH-bar",
+		NewGit(home, "foo/bar").Path(),
+	)
+}
+
+func TestFolderNamingUnparseableURL(t *testing.T) {
+	home := home(t)
+	repo := NewGit(home, "https://github.com/%zz")
+	require.Contains(t, repo.Path(), "-SLASH-unknown")
 }
 
 func TestSubFolder(t *testing.T) {

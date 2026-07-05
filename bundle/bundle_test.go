@@ -66,6 +66,25 @@ func TestZshInvalidGitBundle(t *testing.T) {
 	require.Error(t, err)
 }
 
+// A failed clone must propagate through every bundle kind and wrapper.
+func TestInvalidGitBundleAllKinds(t *testing.T) {
+	for _, args := range []string{
+		"kind:path",
+		"kind:fpath",
+		"kind:clone",
+		"kind:defer",
+		"kind:autoload",
+		"autoload:functions",
+	} {
+		t.Run(args, func(t *testing.T) {
+			b, err := New(home(t), "file:///this/path/does/not/exist "+args)
+			require.NoError(t, err)
+			_, err = b.Get()
+			require.Error(t, err)
+		})
+	}
+}
+
 func TestZshLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec

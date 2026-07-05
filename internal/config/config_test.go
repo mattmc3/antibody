@@ -19,6 +19,22 @@ func testdata(name string) string {
 	return filepath.Join("testdata", name)
 }
 
+func TestConfigPath_XDG(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "/xdg")
+	p, err := configPath()
+	require.NoError(t, err)
+	require.Equal(t, "/xdg/antibody/antibody.toml", p)
+}
+
+func TestConfigPath_NoXDG(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", "")
+	home, err := os.UserHomeDir()
+	require.NoError(t, err)
+	p, err := configPath()
+	require.NoError(t, err)
+	require.Equal(t, filepath.Join(home, ".config", "antibody", "antibody.toml"), p)
+}
+
 func TestLoadFile_Missing(t *testing.T) {
 	cfg, err := loadFile(testdata("nonexistent.toml"))
 	require.NoError(t, err)
