@@ -3,8 +3,6 @@ package project
 import (
 	"os"
 	"path/filepath"
-	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -18,54 +16,6 @@ func skipShort(t *testing.T) {
 	if testing.Short() {
 		t.Skip("integration test: skipped in -short mode")
 	}
-}
-
-func TestList(t *testing.T) {
-	skipShort(t)
-	home := home()
-	proj, err := New(home, "mattmc3/antidote branch:v1")
-	require.NoError(t, err)
-	require.NoError(t, proj.Download())
-	list, err := List(home)
-	require.NoError(t, err)
-	require.Len(t, list, 1)
-}
-
-func TestUpdate(t *testing.T) {
-	skipShort(t)
-	home := home()
-	repo, err := New(home, "zsh-users/zsh-completions")
-	require.NoError(t, err)
-	require.NoError(t, repo.Download())
-	require.NoError(t, repo.Update())
-}
-
-func TestUpdateHome(t *testing.T) {
-	skipShort(t)
-	home := home()
-	for _, tt := range []string{
-		"zsh-users/zsh-autosuggestions",
-		"zsh-users/zsh-completions",
-		"/tmp",
-	} {
-		tt := tt
-		t.Run(tt, func(t *testing.T) {
-			proj, err := New(home, tt)
-			require.NoError(t, err)
-			require.NoError(t, proj.Download())
-			require.NoError(t, Update(home, runtime.NumCPU()))
-		})
-	}
-}
-
-func TestUpdateHomeWithNoGitProjects(t *testing.T) {
-	skipShort(t)
-	home := home()
-	repo, err := New(home, "zsh-users/zsh-autosuggestions")
-	require.NoError(t, err)
-	require.NoError(t, repo.Download())
-	require.NoError(t, os.RemoveAll(filepath.Join(repo.Path(), ".git")))
-	require.Error(t, Update(home, runtime.NumCPU()))
 }
 
 func TestDownloadAllKinds(t *testing.T) {
@@ -104,30 +54,6 @@ func TestDownloadSubmodules(t *testing.T) {
 	require.True(t, len(files) > 1)
 }
 
-func TestDownloadAnotherBranch(t *testing.T) {
-	skipShort(t)
-	home := home()
-	require.NoError(t, NewGit(home, "mattmc3/antidote branch:v1").Download())
-}
-
-func TestUpdateAnotherBranch(t *testing.T) {
-	skipShort(t)
-	home := home()
-	repo := NewGit(home, "mattmc3/antidote branch:v1")
-	require.NoError(t, repo.Download())
-	alreadyClonedRepo := NewClonedGit(home, "https-COLON--SLASH--SLASH-github.com-SLASH-mattmc3-SLASH-antidote")
-	require.NoError(t, alreadyClonedRepo.Update())
-}
-
-func TestUpdateExistentLocalRepo(t *testing.T) {
-	skipShort(t)
-	home := home()
-	repo := NewGit(home, "zsh-users/zsh-completions")
-	require.NoError(t, repo.Download())
-	alreadyClonedRepo := NewClonedGit(home, "https-COLON--SLASH--SLASH-github.com-SLASH-zsh-users-SLASH-zsh-completions")
-	require.NoError(t, alreadyClonedRepo.Update())
-}
-
 func TestDownloadNonExistentRepo(t *testing.T) {
 	skipShort(t)
 	home := home()
@@ -140,22 +66,4 @@ func TestDownloadMalformedRepo(t *testing.T) {
 	home := home()
 	repo := NewGit(home, "doesn-not-exist-really branch:also-nope")
 	require.Error(t, repo.Download())
-}
-
-func TestDownloadMultipleTimes(t *testing.T) {
-	skipShort(t)
-	home := home()
-	repo := NewGit(home, "zsh-users/zsh-completions")
-	require.NoError(t, repo.Download())
-	require.NoError(t, repo.Download())
-	require.NoError(t, repo.Update())
-}
-
-func TestMultipleSubFolders(t *testing.T) {
-	skipShort(t)
-	home := home()
-	require.NoError(t, NewGit(home, strings.Join([]string{
-		"ohmyzsh/ohmyzsh path:plugins/aws",
-		"ohmyzsh/ohmyzsh path:plugins/battery",
-	}, "\n")).Download())
 }

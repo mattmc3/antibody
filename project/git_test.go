@@ -65,6 +65,67 @@ func TestDownloadPinnedRepo(t *testing.T) {
 	require.NoError(t, Update(home, 1))
 }
 
+func TestDownloadAnotherBranch(t *testing.T) {
+	upstream := gittest.New(t)
+	upstream.Branch("v1")
+	upstream.WriteFile("v1.txt", "v1\n")
+	branchSHA := upstream.Commit("v1 work")
+	upstream.Checkout("main")
+	home := home()
+	repo := NewGit(home, upstream.URL()+" branch:v1")
+	require.NoError(t, repo.Download())
+	cloneSHA, err := commit(repo.Path())
+	require.NoError(t, err)
+	require.True(t, strings.HasPrefix(branchSHA, cloneSHA))
+}
+
+func TestUpdateAnotherBranch(t *testing.T) {
+	upstream := gittest.New(t)
+	upstream.Branch("v1")
+	upstream.WriteFile("v1.txt", "v1\n")
+	upstream.Commit("v1 work")
+	upstream.Checkout("main")
+	home := home()
+	repo := NewGit(home, upstream.URL()+" branch:v1")
+	require.NoError(t, repo.Download())
+	folders, err := List(home)
+	require.NoError(t, err)
+	require.Len(t, folders, 1)
+	require.NoError(t, NewClonedGit(home, folders[0]).Update())
+}
+
+func TestUpdateExistentLocalRepo(t *testing.T) {
+	upstream := gittest.New(t)
+	home := home()
+	repo := NewGit(home, upstream.URL())
+	require.NoError(t, repo.Download())
+	folders, err := List(home)
+	require.NoError(t, err)
+	require.Len(t, folders, 1)
+	require.NoError(t, NewClonedGit(home, folders[0]).Update())
+}
+
+func TestDownloadMultipleTimes(t *testing.T) {
+	upstream := gittest.New(t)
+	home := home()
+	repo := NewGit(home, upstream.URL())
+	require.NoError(t, repo.Download())
+	require.NoError(t, repo.Download())
+	require.NoError(t, repo.Update())
+}
+
+func TestMultipleSubFolders(t *testing.T) {
+	upstream := gittest.New(t)
+	upstream.WriteFile("plugins/aws/aws.plugin.zsh", "echo aws\n")
+	upstream.WriteFile("plugins/battery/battery.plugin.zsh", "echo battery\n")
+	upstream.Commit("add plugins")
+	home := home()
+	require.NoError(t, NewGit(home, strings.Join([]string{
+		upstream.URL() + " path:plugins/aws",
+		upstream.URL() + " path:plugins/battery",
+	}, "\n")).Download())
+}
+
 func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home()
