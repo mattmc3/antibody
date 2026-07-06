@@ -31,7 +31,9 @@ function _antibody {
 		'path:prints the path of a currently cloned bundle'
 		'init:initializes the shell so Antibody can work as expected'
 		'completions:generates shell completion scripts'
+		'help:shows help for a command'
 	)
+	local -a help_flag=('(- *)'{-h,--help}'[Show help for a command]')
 
 	_arguments -C \
 		'(- *)'{-v,--version}'[Show application version]' \
@@ -47,14 +49,28 @@ function _antibody {
 	(args)
 		case $words[1] in
 		(purge|path)
-			_antibody_installed_bundles && ret=0
+			_arguments \
+				"$help_flag[@]" \
+				'1:bundle:_antibody_installed_bundles' && ret=0
+			;;
+		(list|ls)
+			_arguments \
+				"$help_flag[@]" \
+				'(-d --dirs)'{-d,--dirs}'[show bundle directory paths]' \
+				'(-u --url)'{-u,--url}'[show bundle URLs only]' && ret=0
 			;;
 		(completions)
 			local -a shells=('zsh:generate zsh completions')
-			_describe 'shell' shells && ret=0
+			_arguments \
+				"$help_flag[@]" \
+				'--fpath[write the script to the completions dir and print the file path]' \
+				'1: :{_describe "shell" shells}' && ret=0
+			;;
+		(help)
+			_describe 'command' subcommands && ret=0
 			;;
 		(*)
-			ret=0
+			_arguments "$help_flag[@]" && ret=0
 			;;
 		esac
 		;;

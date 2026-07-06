@@ -16,6 +16,22 @@ func TestCompletionsZsh(t *testing.T) {
 	require.Contains(t, out, "_antibody")
 }
 
+func TestCompletionsZshListFlags(t *testing.T) {
+	out, err := Completions("zsh")
+	require.NoError(t, err)
+	require.Contains(t, out, "--dirs")
+	require.Contains(t, out, "--url")
+}
+
+func TestCompletionsZshHelp(t *testing.T) {
+	out, err := Completions("zsh")
+	require.NoError(t, err)
+	// kingpin auto-adds a help subcommand; every subcommand takes -h
+	require.Contains(t, out, "help:")
+	require.Contains(t, out, "(help)")
+	require.Contains(t, out, "Show help for a command")
+}
+
 func TestCompletionsZshDualMode(t *testing.T) {
 	out, err := Completions("zsh")
 	require.NoError(t, err)
