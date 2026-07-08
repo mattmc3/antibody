@@ -107,10 +107,13 @@ func TestFolderNamingCustomDomain(t *testing.T) {
 	)
 }
 
+// An unparseable URL must error instead of silently cloning into a
+// fabricated "unknown" folder.
 func TestFolderNamingUnparseableURL(t *testing.T) {
 	home := home(t)
-	repo := newGitT(t, home, "https://github.com/%zz")
-	require.Contains(t, repo.Path(), "-SLASH-unknown")
+	_, err := New(home, "https://github.com/%zz")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "%zz")
 }
 
 func TestSubFolder(t *testing.T) {

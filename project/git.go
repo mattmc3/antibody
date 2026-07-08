@@ -41,7 +41,7 @@ func NewClonedGit(home, folderName string) Project {
 	}
 }
 
-func newGit(cwd, repo, version, inner, pin string) Project {
+func newGit(cwd, repo, version, inner, pin string) (Project, error) {
 	cfg := config.Get()
 	var repoURL string
 	if cfg.GitProtocol() == "ssh" {
@@ -73,9 +73,8 @@ func newGit(cwd, repo, version, inner, pin string) Project {
 	}
 
 	u, err := url.Parse(parseable)
-	if err != nil || u == nil {
-		log.Printf("failed to parse URL %s: %v", parseable, err)
-		u = &url.URL{Host: cfg.GitDomain(), Path: "/unknown"}
+	if err != nil {
+		return nil, fmt.Errorf("invalid bundle URL %q: %w", repo, err)
 	}
 	folder := filepath.Join(cwd, escapedPathFromURL(u))
 	if pin != "" {
@@ -87,7 +86,7 @@ func newGit(cwd, repo, version, inner, pin string) Project {
 		Pin:     pin,
 		folder:  folder,
 		inner:   inner,
-	}
+	}, nil
 }
 
 // nolint: gochecknoglobals

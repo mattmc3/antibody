@@ -33,7 +33,7 @@ func NewFromParsed(home string, parsed bundleparse.Bundle) (Project, error) {
 	if IsLocal(parsed.Name) {
 		return NewLocal(parsed.Name)
 	}
-	return newGit(home, parsed.Name, parsed.Branch, parsed.Path, parsed.Pin), nil
+	return newGit(home, parsed.Name, parsed.Branch, parsed.Path, parsed.Pin)
 }
 
 // CloneRoot returns the top-level clone directory for the given bundle line.
