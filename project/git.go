@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -156,14 +157,10 @@ func (g gitProject) Download() error {
 		}
 		return err
 	}
-	return g.clearPinIfNeeded()
+	return nil
 }
 
 func (g gitProject) Update() error {
-	if pinned, err := gitConfigGet(g.folder, "antibody.pin"); err == nil && pinned != "" {
-		log.Println("skipping pinned repo:", g.URL)
-		return nil
-	}
 	log.Println("updating:", g.URL)
 	oldRev, err := commit(g.folder)
 	if err != nil {
@@ -203,31 +200,6 @@ func commit(folder string) (string, error) {
 	return strings.ReplaceAll(string(rev), "\n", ""), err
 }
 
-func gitConfigGet(folder, key string) (string, error) {
-	cmd := exec.Command("git", "config", "--get", key)
-	cmd.Dir = folder
-	cmd.Env = gitCmdEnv
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("git config --get %s failed: %w: %s", key, err, strings.TrimSpace(string(out)))
-	}
-	return strings.TrimSpace(string(out)), nil
-}
-
-func gitConfigSet(folder, key, value string) error {
-	cmd := exec.Command("git", "config", key, value)
-	cmd.Dir = folder
-	cmd.Env = gitCmdEnv
-	return cmd.Run()
-}
-
-func gitConfigUnset(folder, key string) error {
-	cmd := exec.Command("git", "config", "--unset", key)
-	cmd.Dir = folder
-	cmd.Env = gitCmdEnv
-	return cmd.Run()
-}
-
 func gitCheckoutDetach(folder, sha string) error {
 	cmd := exec.Command("git", "checkout", "--quiet", "--detach", sha)
 	cmd.Dir = folder
@@ -239,11 +211,8 @@ func gitCheckoutDetach(folder, sha string) error {
 }
 
 func (g gitProject) ensurePinned() error {
-	if g.Pin == "" {
+	if headSHA(g.folder) == g.Pin {
 		return nil
-	}
-	if current, err := commit(g.folder); err == nil && current == g.Pin {
-		return gitConfigSet(g.folder, "antibody.pin", g.Pin)
 	}
 	if err := gitCheckoutDetach(g.folder, g.Pin); err != nil {
 		// Try fetching the commit if it's not present locally.
@@ -253,28 +222,21 @@ func (g gitProject) ensurePinned() error {
 		if bts, ferr := cmd.CombinedOutput(); ferr != nil {
 			return fmt.Errorf("git fetch failed: %w: %s", ferr, strings.TrimSpace(string(bts)))
 		}
-		if err = gitCheckoutDetach(g.folder, g.Pin); err != nil {
-			return err
-		}
-	}
-	if err := gitConfigSet(g.folder, "antibody.pin", g.Pin); err != nil {
-		return err
-	}
-	configValue, err := gitConfigGet(g.folder, "antibody.pin")
-	if err != nil {
-		return err
-	}
-	if configValue != g.Pin {
-		return fmt.Errorf("failed to persist pin config, got %q", configValue)
+		return gitCheckoutDetach(g.folder, g.Pin)
 	}
 	return nil
 }
 
-func (g gitProject) clearPinIfNeeded() error {
-	if _, err := gitConfigGet(g.folder, "antibody.pin"); err != nil {
-		return nil
+// headSHA reads .git/HEAD directly so a correctly pinned clone can be
+// verified without spawning git. A detached HEAD holds the bare SHA;
+// anything else ("ref: ..." or a read error) fails the match and takes
+// the checkout path.
+func headSHA(folder string) string {
+	head, err := os.ReadFile(filepath.Join(folder, ".git", "HEAD"))
+	if err != nil {
+		return ""
 	}
-	return gitConfigUnset(g.folder, "antibody.pin")
+	return strings.TrimSpace(string(head))
 }
 
 func branch(folder string) (string, error) {
@@ -291,6 +253,15 @@ func escapedPathFromURL(u *url.URL) string {
 	result = strings.ReplaceAll(result, "/", "-SLASH-")
 	result = strings.ReplaceAll(result, "@", "-AT-")
 	return result
+}
+
+// nolint: gochecknoglobals
+var pinnedFolderPattern = regexp.MustCompile(`-SLASH-tree-SLASH-[0-9a-f]{40}$`)
+
+// isPinnedFolder reports whether a clone folder name is a pinned clone.
+// The pin SHA is part of the folder name, so no git state is consulted.
+func isPinnedFolder(folder string) bool {
+	return pinnedFolderPattern.MatchString(folder)
 }
 
 func escapedPathToURL(path string) string {

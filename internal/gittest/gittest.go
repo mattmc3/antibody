@@ -14,14 +14,14 @@ import (
 // Repo is a local git repository rooted at Dir. All helper methods fail
 // the test on error.
 type Repo struct {
-	t   *testing.T
+	t   testing.TB
 	Dir string
 }
 
 // New creates a git repository on branch main with an initial commit
 // containing file.txt. The repo is removed automatically when the test
 // finishes.
-func New(t *testing.T) *Repo {
+func New(t testing.TB) *Repo {
 	t.Helper()
 	r := &Repo{t: t, Dir: t.TempDir()}
 	r.git("init", "-b", "main")

@@ -136,13 +136,6 @@ func TestDownloadPinnedRepo(t *testing.T) {
 		t.Fatalf("repo.Download failed: %#v", err)
 	}
 
-	configValue, err := gitConfigGet(repo.Path(), "antibody.pin")
-	if err != nil {
-		out, _ := exec.Command("git", "-C", repo.Path(), "config", "--list").CombinedOutput()
-		t.Fatalf("gitConfigGet failed: %#v, config list: %q", err, string(out))
-	}
-	require.Equal(t, sha, configValue)
-
 	cmd := exec.Command("git", "-C", repo.Path(), "rev-parse", "HEAD")
 	out, err := cmd.Output()
 	require.NoError(t, err)
@@ -289,15 +282,16 @@ func TestDownloadAdvancePin(t *testing.T) {
 	require.NoError(t, Update(home, 1))
 }
 
-func TestDownloadClearsStalePin(t *testing.T) {
+// A leftover antibody.pin config from older versions must not block
+// updates; pin state lives in the folder name now.
+func TestUpdateIgnoresStalePinConfig(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)
 	repo := NewGit(home, upstream.URL())
 	require.NoError(t, repo.Download())
-	require.NoError(t, gitConfigSet(repo.Path(), "antibody.pin", upstream.HEAD()))
+	cmd := exec.Command("git", "-C", repo.Path(), "config", "antibody.pin", upstream.HEAD())
+	require.NoError(t, cmd.Run())
 	require.NoError(t, repo.Download())
-	_, err := gitConfigGet(repo.Path(), "antibody.pin")
-	require.Error(t, err)
 	upstream.WriteFile("new.txt", "new\n")
 	newSHA := upstream.Commit("upstream work")
 	require.NoError(t, Update(home, 1))
@@ -356,6 +350,50 @@ func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
 	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
 	require.Error(t, repo.Download())
 	require.NoDirExists(t, repo.Path())
+}
+
+// Existing clones must load without spawning git at all; bundle runs on
+// every shell startup and process spawns dominate its cost.
+func TestDownloadExistingCloneNeedsNoGit(t *testing.T) {
+	upstream := gittest.New(t)
+	sha := upstream.HEAD()
+	home := home(t)
+	pinned := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
+	require.NoError(t, pinned.Download())
+	plain := NewGit(home, upstream.URL())
+	require.NoError(t, plain.Download())
+
+	t.Setenv("PATH", "")
+	require.NoError(t, plain.Download())
+	require.NoError(t, pinned.Download())
+}
+
+func BenchmarkDownloadExistingClone(b *testing.B) {
+	upstream := gittest.New(b)
+	home := b.TempDir()
+	repo := NewGit(home, upstream.URL())
+	if err := repo.Download(); err != nil {
+		b.Fatal(err)
+	}
+	for b.Loop() {
+		if err := repo.Download(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkDownloadExistingPinnedClone(b *testing.B) {
+	upstream := gittest.New(b)
+	home := b.TempDir()
+	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), upstream.HEAD()))
+	if err := repo.Download(); err != nil {
+		b.Fatal(err)
+	}
+	for b.Loop() {
+		if err := repo.Download(); err != nil {
+			b.Fatal(err)
+		}
+	}
 }
 
 func home(t *testing.T) string {

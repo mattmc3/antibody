@@ -1,6 +1,7 @@
 package project
 
 import (
+	"log"
 	"os"
 
 	"golang.org/x/sync/errgroup"
@@ -53,6 +54,10 @@ func Update(home string, parallelism int) error {
 	sem := make(chan bool, parallelism)
 	var g errgroup.Group
 	for _, folder := range folders {
+		if isPinnedFolder(folder) {
+			log.Println("skipping pinned repo:", escapedPathToURL(folder))
+			continue
+		}
 		folder := folder
 		sem <- true
 		g.Go(func() error {
