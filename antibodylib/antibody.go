@@ -54,12 +54,10 @@ func (a *Antibody) Bundle() (string, error) {
 
 	var g errgroup.Group
 	var shs safeIndexedLines
-	var sem = make(chan bool, a.parallelism)
+	g.SetLimit(a.parallelism)
 
 	if hasDefer {
-		sem <- true
 		g.Go(func() error {
-			defer func() { <-sem }()
 			sh, err := deferEnsure(a.Home)
 			if err != nil {
 				return err
@@ -70,11 +68,7 @@ func (a *Antibody) Bundle() (string, error) {
 	}
 
 	for i, parsed := range parsedBundles {
-		i := i
-		parsed := parsed
-		sem <- true
 		g.Go(func() error {
-			defer func() { <-sem }()
 			lineBundle, berr := bundle.NewFromParsed(a.Home, parsed)
 			if berr != nil {
 				return berr

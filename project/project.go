@@ -51,19 +51,14 @@ func Update(home string, parallelism int) error {
 	if err != nil {
 		return err
 	}
-	sem := make(chan bool, parallelism)
 	var g errgroup.Group
+	g.SetLimit(parallelism)
 	for _, folder := range folders {
 		if isPinnedFolder(folder) {
 			log.Println("skipping pinned repo:", escapedPathToURL(folder))
 			continue
 		}
-		folder := folder
-		sem <- true
 		g.Go(func() error {
-			defer func() {
-				<-sem
-			}()
 			return NewClonedGit(home, folder).Update()
 		})
 	}
