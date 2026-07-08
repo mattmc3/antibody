@@ -41,12 +41,6 @@ func NewClonedGit(home, folderName string) Project {
 	}
 }
 
-const (
-	branchMarker = "branch:"
-	pathMarker   = "path:"
-	pinMarker    = "pin:"
-)
-
 func newGit(cwd, repo, version, inner, pin string) Project {
 	cfg := config.Get()
 	var repoURL string
@@ -94,32 +88,6 @@ func newGit(cwd, repo, version, inner, pin string) Project {
 		folder:  folder,
 		inner:   inner,
 	}
-}
-
-// NewGit A git project can be any repository in any given branch. It will
-// be downloaded to the provided cwd
-func NewGit(cwd, line string) Project {
-	version := ""
-	inner := ""
-	pin := ""
-	parts := strings.Split(line, " ")
-	for _, part := range parts {
-		if strings.HasPrefix(part, branchMarker) {
-			version = strings.ReplaceAll(part, branchMarker, "")
-		}
-		if strings.HasPrefix(part, pathMarker) {
-			inner = strings.ReplaceAll(part, pathMarker, "")
-		}
-		if strings.HasPrefix(part, pinMarker) {
-			pin = strings.ReplaceAll(part, pinMarker, "")
-		}
-	}
-	return newGit(cwd, parts[0], version, inner, pin)
-}
-
-// NewGitWithAnnotations creates a git project from explicit repo, branch, path, and pin.
-func NewGitWithAnnotations(cwd, repo, branch, path, pin string) Project {
-	return newGit(cwd, repo, branch, path, pin)
 }
 
 // nolint: gochecknoglobals

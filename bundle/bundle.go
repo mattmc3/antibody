@@ -38,20 +38,7 @@ func New(home, line string) (Bundle, error) {
 	if parsed.Name == "" {
 		return nil, fmt.Errorf("not a bundle line: %q", line)
 	}
-	if err := validatePin(parsed); err != nil {
-		return nil, err
-	}
-
-	proj, err := project.New(home, line)
-	if err != nil {
-		return nil, err
-	}
-
-	if parsed.Kind == "" {
-		parsed.Kind = bundleparse.KindZsh
-	}
-
-	return bundleFromParsed(parsed, proj)
+	return NewFromParsed(home, parsed)
 }
 
 func NewFromParsed(home string, parsed bundleparse.Bundle) (Bundle, error) {
@@ -62,15 +49,9 @@ func NewFromParsed(home string, parsed bundleparse.Bundle) (Bundle, error) {
 		return nil, err
 	}
 
-	var proj project.Project
-	var err error
-	if project.IsLocal(parsed.Name) {
-		proj, err = project.NewLocal(parsed.Name)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		proj = project.NewGitWithAnnotations(home, parsed.Name, parsed.Branch, parsed.Path, parsed.Pin)
+	proj, err := project.NewFromParsed(home, parsed)
+	if err != nil {
+		return nil, err
 	}
 
 	if parsed.Kind == "" {

@@ -115,7 +115,8 @@ func update() {
 func purge() {
 	home := findHome()
 	fmt.Printf("Removing %s...\n", *purgee)
-	root := project.CloneRoot(home, *purgee)
+	root, err := project.CloneRoot(home, *purgee)
+	app.FatalIfError(err, "failed to purge")
 	candidates := []string{root}
 
 	pinnedGlob := root + "-SLASH-*"
@@ -163,7 +164,8 @@ func list() {
 
 func path() {
 	home := findHome()
-	root := project.CloneRoot(home, *pathee)
+	root, err := project.CloneRoot(home, *pathee)
+	app.FatalIfError(err, "failed to find path")
 	paths := []string{root}
 	pinnedGlob := root + "-SLASH-*"
 	if matches, err := filepath.Glob(pinnedGlob); err == nil {

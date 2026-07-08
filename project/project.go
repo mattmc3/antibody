@@ -1,9 +1,11 @@
 package project
 
 import (
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/getantidote/bundleparse"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -14,21 +16,36 @@ type Project interface {
 	Path() string
 }
 
-// New decides what kind of project it is, based on the given line
+// New parses a bundle line and returns the project it refers to.
 func New(home, line string) (Project, error) {
-	if IsLocal(line) {
-		return NewLocal(line)
+	parsed, err := bundleparse.ParseBundleLine(line)
+	if err != nil {
+		return nil, err
 	}
-	return NewGit(home, line), nil
+	if parsed.Name == "" {
+		return nil, fmt.Errorf("not a bundle line: %q", line)
+	}
+	return NewFromParsed(home, parsed)
+}
+
+// NewFromParsed returns the project an already-parsed bundle refers to.
+func NewFromParsed(home string, parsed bundleparse.Bundle) (Project, error) {
+	if IsLocal(parsed.Name) {
+		return NewLocal(parsed.Name)
+	}
+	return newGit(home, parsed.Name, parsed.Branch, parsed.Path, parsed.Pin), nil
 }
 
 // CloneRoot returns the top-level clone directory for the given bundle line.
-func CloneRoot(home, line string) string {
-	proj, _ := New(home, line)
-	if git, ok := proj.(gitProject); ok {
-		return git.folder
+func CloneRoot(home, line string) (string, error) {
+	proj, err := New(home, line)
+	if err != nil {
+		return "", err
 	}
-	return proj.Path()
+	if git, ok := proj.(gitProject); ok {
+		return git.folder, nil
+	}
+	return proj.Path(), nil
 }
 
 // List all projects in the given folder

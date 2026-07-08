@@ -62,7 +62,7 @@ func TestSymlinkedHome(t *testing.T) {
 	link := filepath.Join(t.TempDir(), "antibody-home")
 	require.NoError(t, os.Symlink(real, link))
 	upstream := gittest.New(t)
-	repo := NewGit(link, upstream.URL())
+	repo := newGitT(t, link, upstream.URL())
 	require.NoError(t, repo.Download())
 	list, err := List(link)
 	require.NoError(t, err)
@@ -87,10 +87,41 @@ func TestUpdateNonExistentHome(t *testing.T) {
 	require.Error(t, Update("/tmp/asdasdasdasksksksksnopeeeee", runtime.NumCPU()))
 }
 
+// Quoted annotation values must map to the same folder the bundle
+// pipeline uses; purge and path go through this parser.
+func TestCloneRootQuotedPin(t *testing.T) {
+	home := home(t)
+	sha := strings.Repeat("a", 40)
+	root, err := CloneRoot(home, `ohmyzsh/ohmyzsh pin:"`+sha+`"`)
+	require.NoError(t, err)
+	require.Equal(t,
+		filepath.Join(home, "https-COLON--SLASH--SLASH-github.com-SLASH-ohmyzsh-SLASH-ohmyzsh-SLASH-tree-SLASH-"+sha[:7]),
+		root,
+	)
+}
+
+// NewLocal must take the name as-is; it used to split on spaces and
+// silently truncate.
+func TestNewLocalPathWithSpaces(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "dir with spaces")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	proj, err := NewLocal(dir)
+	require.NoError(t, err)
+	require.Equal(t, dir, proj.Path())
+}
+
+// The bundle format cannot express a name containing spaces; such a
+// line must error rather than silently resolve to a truncated path.
+func TestNewSpacedPathLineErrors(t *testing.T) {
+	_, err := New(t.TempDir(), "/tmp/dir with spaces kind:path")
+	require.Error(t, err)
+}
+
 func TestCloneRootPinnedRepo(t *testing.T) {
 	home := home(t)
 	sha := strings.Repeat("a", 40)
-	root := CloneRoot(home, "ohmyzsh/ohmyzsh pin:"+sha)
+	root, err := CloneRoot(home, "ohmyzsh/ohmyzsh pin:"+sha)
+	require.NoError(t, err)
 	require.Equal(t,
 		filepath.Join(home, "https-COLON--SLASH--SLASH-github.com-SLASH-ohmyzsh-SLASH-ohmyzsh-SLASH-tree-SLASH-"+sha[:7]),
 		root,

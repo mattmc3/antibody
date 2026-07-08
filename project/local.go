@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-// NewLocal Returns a local project, which can be any folder you want to
-func NewLocal(line string) (Project, error) {
-	name := strings.Split(line, " ")[0]
+// NewLocal Returns a local project, which can be any folder you want to.
+// name must already be parsed, ie: an annotation-free path.
+func NewLocal(name string) (Project, error) {
 	folder, err := expandFolder(name)
 	if err != nil {
 		return localProject{}, err

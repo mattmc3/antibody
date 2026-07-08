@@ -35,7 +35,7 @@ func TestDownloadAllKinds(t *testing.T) {
 		home := home(t)
 		require.NoError(
 			t,
-			NewGit(home, url).Download(),
+			newGitT(t, home, url).Download(),
 			"Repo "+url+" failed to download",
 		)
 	}
@@ -45,7 +45,7 @@ func TestDownloadSubmodules(t *testing.T) {
 	skipShort(t)
 	t.Skip("Skipping submodule test - can hang on CI")
 	var home = home(t)
-	var proj = NewGit(home, "ohmyzsh/ohmyzsh branch:master")
+	var proj = newGitT(t, home, "ohmyzsh/ohmyzsh branch:master")
 	var module = filepath.Join(proj.Path(), "plugins")
 	require.NoError(t, proj.Download())
 	require.NoError(t, proj.Update())
