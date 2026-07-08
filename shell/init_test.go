@@ -12,6 +12,14 @@ func TestGeneratesInit(t *testing.T) {
 	require.NotEmpty(t, shell)
 }
 
+// Args must be quoted or arguments with spaces word-split in zsh.
+func TestInitQuotesArgs(t *testing.T) {
+	shell, err := Init()
+	require.NoError(t, err)
+	require.Contains(t, shell, `"$@"`)
+	require.NotRegexp(t, `\$@[^"]`, shell)
+}
+
 func TestInitUsesCompletionsSubcommand(t *testing.T) {
 	shell, err := Init()
 	require.NoError(t, err)

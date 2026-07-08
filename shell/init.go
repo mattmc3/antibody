@@ -10,10 +10,10 @@ const tmpl = `#!/usr/bin/env zsh
 antibody() {
 	case "$1" in
 	bundle)
-		source <( {{ . }} $@ ) || {{ . }} $@
+		source <( {{ . }} "$@" ) || {{ . }} "$@"
 		;;
 	*)
-		{{ . }} $@
+		{{ . }} "$@"
 		;;
 	esac
 }
@@ -33,8 +33,8 @@ func Init() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var template = template.Must(template.New("init").Parse(tmpl))
+	initTmpl := template.Must(template.New("init").Parse(tmpl))
 	var out bytes.Buffer
-	err = template.Execute(&out, executable)
+	err = initTmpl.Execute(&out, executable)
 	return out.String(), err
 }
