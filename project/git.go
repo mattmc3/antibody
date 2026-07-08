@@ -252,6 +252,15 @@ func EscapedPathToURL(path string) string {
 	return escapedPathToURL(path)
 }
 
+// nolint: gochecknoglobals
+var pinnedURLSuffix = regexp.MustCompile(`/tree/[0-9a-f]{7,40}$`)
+
+// TrimPinSuffix removes the /tree/<sha> suffix a pinned clone's
+// unescaped folder name carries, leaving the plain repo URL.
+func TrimPinSuffix(url string) string {
+	return pinnedURLSuffix.ReplaceAllString(url, "")
+}
+
 func (g gitProject) Path() string {
 	return filepath.Join(g.folder, g.inner)
 }

@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -422,6 +423,23 @@ func TestNewFromParsedRejectsEmptyName(t *testing.T) {
 	b, err := NewFromParsed(home(t), bundleparse.Bundle{})
 	require.Error(t, err)
 	require.Nil(t, b)
+}
+
+// A pinned clone folder carries a /tree/<sha> suffix; the sha must not
+// leak into the init file name the zsh kind gives priority to.
+func TestPinnedZshBundleInitFilePriority(t *testing.T) {
+	upstream := gittest.New(t)
+	name := filepath.Base(upstream.Dir)
+	upstream.WriteFile(name+".plugin.zsh", "echo main\n")
+	upstream.WriteFile("zzz.plugin.zsh", "echo decoy\n")
+	sha := upstream.Commit("add plugins")
+
+	b, err := New(home(t), fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
+	require.NoError(t, err)
+	result, err := b.Get()
+	require.NoError(t, err)
+	require.Contains(t, result, name+".plugin.zsh")
+	require.NotContains(t, result, "zzz.plugin.zsh")
 }
 
 func TestPinRequiresFullSHA(t *testing.T) {

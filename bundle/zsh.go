@@ -73,10 +73,11 @@ func initFiles(dir string) ([]string, error) {
 }
 
 // initFileBase returns the plugin name a directory's default init file is
-// named after. Clone folders are URL-escaped, so unescape before taking the
+// named after. Clone folders are URL-escaped and pinned clones carry a
+// /tree/<sha> suffix, so unescape and strip the pin before taking the
 // last path segment.
 func initFileBase(dir string) string {
-	base := project.EscapedPathToURL(filepath.Base(dir))
+	base := project.TrimPinSuffix(project.EscapedPathToURL(filepath.Base(dir)))
 	if i := strings.LastIndex(base, "/"); i >= 0 {
 		base = base[i+1:]
 	}
