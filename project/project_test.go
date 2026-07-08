@@ -13,7 +13,7 @@ import (
 
 func TestList(t *testing.T) {
 	upstream := gittest.New(t)
-	home := home()
+	home := home(t)
 	proj, err := New(home, upstream.URL())
 	require.NoError(t, err)
 	require.NoError(t, proj.Download())
@@ -24,7 +24,7 @@ func TestList(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	upstream := gittest.New(t)
-	home := home()
+	home := home(t)
 	repo, err := New(home, upstream.URL())
 	require.NoError(t, err)
 	require.NoError(t, repo.Download())
@@ -32,7 +32,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateHome(t *testing.T) {
-	home := home()
+	home := home(t)
 	for _, tt := range []string{
 		gittest.New(t).URL(),
 		gittest.New(t).URL(),
@@ -49,7 +49,7 @@ func TestUpdateHome(t *testing.T) {
 
 func TestUpdateHomeWithNoGitProjects(t *testing.T) {
 	upstream := gittest.New(t)
-	home := home()
+	home := home(t)
 	repo, err := New(home, upstream.URL())
 	require.NoError(t, err)
 	require.NoError(t, repo.Download())
@@ -58,7 +58,7 @@ func TestUpdateHomeWithNoGitProjects(t *testing.T) {
 }
 
 func TestListEmptyFolder(t *testing.T) {
-	home := home()
+	home := home(t)
 	list, err := List(home)
 	require.NoError(t, err)
 	require.Len(t, list, 0)
@@ -75,7 +75,7 @@ func TestUpdateNonExistentHome(t *testing.T) {
 }
 
 func TestCloneRootPinnedRepo(t *testing.T) {
-	home := home()
+	home := home(t)
 	sha := strings.Repeat("a", 40)
 	root := CloneRoot(home, "ohmyzsh/ohmyzsh pin:"+sha)
 	require.Equal(t,

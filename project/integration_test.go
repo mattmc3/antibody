@@ -32,7 +32,7 @@ func TestDownloadAllKinds(t *testing.T) {
 		urls = append(urls, "git@github.com:zsh-users/zsh-completions.git")
 	}
 	for _, url := range urls {
-		home := home()
+		home := home(t)
 		require.NoError(
 			t,
 			NewGit(home, url).Download(),
@@ -44,7 +44,7 @@ func TestDownloadAllKinds(t *testing.T) {
 func TestDownloadSubmodules(t *testing.T) {
 	skipShort(t)
 	t.Skip("Skipping submodule test - can hang on CI")
-	var home = home()
+	var home = home(t)
 	var proj = NewGit(home, "ohmyzsh/ohmyzsh branch:master")
 	var module = filepath.Join(proj.Path(), "plugins")
 	require.NoError(t, proj.Download())
@@ -56,14 +56,14 @@ func TestDownloadSubmodules(t *testing.T) {
 
 func TestDownloadNonExistentRepo(t *testing.T) {
 	skipShort(t)
-	home := home()
+	home := home(t)
 	repo := NewGit(home, "zsh-users/not-a-real-repo")
 	require.Error(t, repo.Download())
 }
 
 func TestDownloadMalformedRepo(t *testing.T) {
 	skipShort(t)
-	home := home()
+	home := home(t)
 	repo := NewGit(home, "doesn-not-exist-really branch:also-nope")
 	require.Error(t, repo.Download())
 }

@@ -276,7 +276,5 @@ func TestPinRequiresFullSHA(t *testing.T) {
 }
 
 func home(t *testing.T) string {
-	home, err := os.MkdirTemp(os.TempDir(), "antibody")
-	require.NoError(t, err)
-	return home
+	return t.TempDir()
 }

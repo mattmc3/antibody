@@ -12,12 +12,8 @@ import (
 )
 
 func TestUsingDirective(t *testing.T) {
-	home := home()
-	repo, err := os.MkdirTemp(os.TempDir(), "antibody-using")
-	require.NoError(t, err)
-	defer func() {
-		require.NoError(t, os.RemoveAll(repo))
-	}()
+	home := home(t)
+	repo := t.TempDir()
 
 	require.NoError(t, os.WriteFile(filepath.Join(repo, "myplugin.plugin.zsh"), []byte("echo hi"), 0644))
 
@@ -33,11 +29,9 @@ func TestUsingDirective(t *testing.T) {
 }
 
 func TestBareCarriageReturnLineEndings(t *testing.T) {
-	home := home()
-	p1, err := os.MkdirTemp(os.TempDir(), "antibody-cr1")
-	require.NoError(t, err)
-	p2, err := os.MkdirTemp(os.TempDir(), "antibody-cr2")
-	require.NoError(t, err)
+	home := home(t)
+	p1 := t.TempDir()
+	p2 := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(p1, "a.plugin.zsh"), []byte(""), 0644))
 	require.NoError(t, os.WriteFile(filepath.Join(p2, "b.plugin.zsh"), []byte(""), 0644))
 
@@ -60,10 +54,7 @@ func TestHomeFromEnvironmentVariable(t *testing.T) {
 	require.Equal(t, "/tmp", h)
 }
 
-func home() string {
-	home, err := os.MkdirTemp(os.TempDir(), "antibody")
-	if err != nil {
-		panic(err.Error())
-	}
-	return home
+func home(tb testing.TB) string {
+	tb.Helper()
+	return tb.TempDir()
 }

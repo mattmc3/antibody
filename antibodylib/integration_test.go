@@ -22,7 +22,7 @@ func skipShort(t *testing.T) {
 
 func TestAntibody(t *testing.T) {
 	skipShort(t)
-	home := home()
+	home := home(t)
 	bundles := []string{
 		"# comments also are allowed",
 		"zsh-users/zsh-completions kind:path # comment at the end of the line",
@@ -51,7 +51,7 @@ func TestAntibody(t *testing.T) {
 
 func TestAntibodyError(t *testing.T) {
 	skipShort(t)
-	home := home()
+	home := home(t)
 	bundles := bytes.NewBufferString("invalid-repo")
 	sh, err := New(home, bundles, runtime.NumCPU()).Bundle()
 	require.Error(t, err)
@@ -60,7 +60,7 @@ func TestAntibodyError(t *testing.T) {
 
 func TestMultipleRepositories(t *testing.T) {
 	skipShort(t)
-	home := home()
+	home := home(t)
 	bundles := []string{
 		"# this block is in alphabetic order",
 		"unixorn/git-extra-commands kind:path",
@@ -90,7 +90,7 @@ func TestMultipleRepositories(t *testing.T) {
 
 func TestDeferEnsureInjectedOnce(t *testing.T) {
 	skipShort(t)
-	home := home()
+	home := home(t)
 	bundles := []string{
 		"zsh-users/zsh-autosuggestions kind:defer",
 		"sindresorhus/pure kind:defer",
@@ -123,7 +123,7 @@ func TestBundleLargeCorpus(t *testing.T) {
 	}
 	require.Greater(t, active, 100, "corpus unexpectedly small")
 
-	home := home()
+	home := home(t)
 	sh, err := New(
 		home,
 		bytes.NewBuffer(corpus),
@@ -174,7 +174,7 @@ func BenchmarkDownload(b *testing.B) {
 		"zsh-users/zsh-history-substring-search",
 	}, "\n")
 	for i := 0; i < b.N; i++ {
-		home := home()
+		home := home(b)
 		_, err := New(
 			home,
 			bytes.NewBufferString(bundles),

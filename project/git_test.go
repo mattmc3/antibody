@@ -2,7 +2,6 @@ package project
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -12,13 +11,13 @@ import (
 )
 
 func TestUpdateNonExistentLocalRepo(t *testing.T) {
-	home := home()
+	home := home(t)
 	repo := NewGit(home, "zsh-users/zsh-completions")
 	require.Error(t, repo.Update())
 }
 
 func TestDownloadFolderNaming(t *testing.T) {
-	home := home()
+	home := home(t)
 	repo := NewGit(home, "zsh-users/zsh-completions")
 	require.Equal(
 		t,
@@ -28,13 +27,13 @@ func TestDownloadFolderNaming(t *testing.T) {
 }
 
 func TestSubFolder(t *testing.T) {
-	home := home()
+	home := home(t)
 	repo := NewGit(home, "ohmyzsh/ohmyzsh path:plugins/aws")
 	require.True(t, strings.HasSuffix(repo.Path(), "plugins/aws"))
 }
 
 func TestPath(t *testing.T) {
-	home := home()
+	home := home(t)
 	repo := NewGit(home, "docker/cli path:contrib/completion/zsh/_docker")
 	require.True(t, strings.HasSuffix(repo.Path(), "contrib/completion/zsh/_docker"))
 }
@@ -42,7 +41,7 @@ func TestPath(t *testing.T) {
 func TestDownloadPinnedRepo(t *testing.T) {
 	upstream := gittest.New(t)
 	sha := upstream.HEAD()
-	home := home()
+	home := home(t)
 	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
 	require.Contains(t, repo.Path(), "-SLASH-tree-SLASH-"+sha)
 	require.NotContains(t, repo.Path(), "/tree/")
@@ -71,7 +70,7 @@ func TestDownloadAnotherBranch(t *testing.T) {
 	upstream.WriteFile("v1.txt", "v1\n")
 	branchSHA := upstream.Commit("v1 work")
 	upstream.Checkout("main")
-	home := home()
+	home := home(t)
 	repo := NewGit(home, upstream.URL()+" branch:v1")
 	require.NoError(t, repo.Download())
 	cloneSHA, err := commit(repo.Path())
@@ -85,7 +84,7 @@ func TestUpdateAnotherBranch(t *testing.T) {
 	upstream.WriteFile("v1.txt", "v1\n")
 	upstream.Commit("v1 work")
 	upstream.Checkout("main")
-	home := home()
+	home := home(t)
 	repo := NewGit(home, upstream.URL()+" branch:v1")
 	require.NoError(t, repo.Download())
 	folders, err := List(home)
@@ -96,7 +95,7 @@ func TestUpdateAnotherBranch(t *testing.T) {
 
 func TestUpdateExistentLocalRepo(t *testing.T) {
 	upstream := gittest.New(t)
-	home := home()
+	home := home(t)
 	repo := NewGit(home, upstream.URL())
 	require.NoError(t, repo.Download())
 	folders, err := List(home)
@@ -107,7 +106,7 @@ func TestUpdateExistentLocalRepo(t *testing.T) {
 
 func TestDownloadMultipleTimes(t *testing.T) {
 	upstream := gittest.New(t)
-	home := home()
+	home := home(t)
 	repo := NewGit(home, upstream.URL())
 	require.NoError(t, repo.Download())
 	require.NoError(t, repo.Download())
@@ -119,7 +118,7 @@ func TestMultipleSubFolders(t *testing.T) {
 	upstream.WriteFile("plugins/aws/aws.plugin.zsh", "echo aws\n")
 	upstream.WriteFile("plugins/battery/battery.plugin.zsh", "echo battery\n")
 	upstream.Commit("add plugins")
-	home := home()
+	home := home(t)
 	require.NoError(t, NewGit(home, strings.Join([]string{
 		upstream.URL() + " path:plugins/aws",
 		upstream.URL() + " path:plugins/battery",
@@ -128,17 +127,13 @@ func TestMultipleSubFolders(t *testing.T) {
 
 func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
 	upstream := gittest.New(t)
-	home := home()
+	home := home(t)
 	sha := "lmnop"
 	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
 	require.Error(t, repo.Download())
 	require.NoDirExists(t, repo.Path())
 }
 
-func home() string {
-	home, err := os.MkdirTemp(os.TempDir(), "antibody")
-	if err != nil {
-		panic(err.Error())
-	}
-	return home
+func home(t *testing.T) string {
+	return t.TempDir()
 }
