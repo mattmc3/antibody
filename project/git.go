@@ -85,7 +85,7 @@ func newGit(cwd, repo, version, inner, pin string) Project {
 	}
 	folder := filepath.Join(cwd, escapedPathFromURL(u))
 	if pin != "" {
-		folder = folder + "-SLASH-tree-SLASH-" + pin
+		folder = folder + "-SLASH-tree-SLASH-" + shortSHA(pin)
 	}
 	return gitProject{
 		Version: version,
@@ -255,8 +255,17 @@ func escapedPathFromURL(u *url.URL) string {
 	return result
 }
 
+// shortSHA returns the folder-name form of a pin. Only the clone folder
+// uses it; validation and HEAD comparison always use the full SHA.
+func shortSHA(sha string) string {
+	if len(sha) > 7 {
+		return sha[:7]
+	}
+	return sha
+}
+
 // nolint: gochecknoglobals
-var pinnedFolderPattern = regexp.MustCompile(`-SLASH-tree-SLASH-[0-9a-f]{40}$`)
+var pinnedFolderPattern = regexp.MustCompile(`-SLASH-tree-SLASH-[0-9a-f]{7,40}$`)
 
 // isPinnedFolder reports whether a clone folder name is a pinned clone.
 // The pin SHA is part of the folder name, so no git state is consulted.

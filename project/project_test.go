@@ -92,7 +92,7 @@ func TestCloneRootPinnedRepo(t *testing.T) {
 	sha := strings.Repeat("a", 40)
 	root := CloneRoot(home, "ohmyzsh/ohmyzsh pin:"+sha)
 	require.Equal(t,
-		filepath.Join(home, "https-COLON--SLASH--SLASH-github.com-SLASH-ohmyzsh-SLASH-ohmyzsh-SLASH-tree-SLASH-"+sha),
+		filepath.Join(home, "https-COLON--SLASH--SLASH-github.com-SLASH-ohmyzsh-SLASH-ohmyzsh-SLASH-tree-SLASH-"+sha[:7]),
 		root,
 	)
 }

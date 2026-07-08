@@ -130,7 +130,8 @@ func TestDownloadPinnedRepo(t *testing.T) {
 	sha := upstream.HEAD()
 	home := home(t)
 	repo := NewGit(home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
-	require.Contains(t, repo.Path(), "-SLASH-tree-SLASH-"+sha)
+	require.Contains(t, repo.Path(), "-SLASH-tree-SLASH-"+sha[:7])
+	require.NotContains(t, repo.Path(), sha[7:])
 	require.NotContains(t, repo.Path(), "/tree/")
 	if err := repo.Download(); err != nil {
 		t.Fatalf("repo.Download failed: %#v", err)
