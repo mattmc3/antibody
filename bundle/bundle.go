@@ -35,6 +35,9 @@ func New(home, line string) (Bundle, error) {
 	if err != nil {
 		return nil, err
 	}
+	if parsed.Name == "" {
+		return nil, fmt.Errorf("not a bundle line: %q", line)
+	}
 	if err := validatePin(parsed); err != nil {
 		return nil, err
 	}
@@ -53,7 +56,7 @@ func New(home, line string) (Bundle, error) {
 
 func NewFromParsed(home string, parsed bundleparse.Bundle) (Bundle, error) {
 	if parsed.Name == "" {
-		return nil, nil
+		return nil, fmt.Errorf("empty bundle name")
 	}
 	if err := validatePin(parsed); err != nil {
 		return nil, err

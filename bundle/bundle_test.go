@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/getantidote/bundleparse"
 	"github.com/mattmc3/antibody/internal/gittest"
 	"github.com/stretchr/testify/require"
 )
@@ -403,6 +404,24 @@ func TestDeferredPost(t *testing.T) {
 	result, err := b.Get()
 	require.NoError(t, err)
 	require.True(t, strings.HasSuffix(result, "\nzsh-defer my_post_cmd"), "post should be deferred, got: %s", result)
+}
+
+// Non-bundle lines must error, not build a bundle around a garbage
+// project or return a nil that panics at Get.
+func TestNewRejectsNonBundleLines(t *testing.T) {
+	for _, line := range []string{"", "   ", "# comment"} {
+		t.Run("line "+line, func(t *testing.T) {
+			b, err := New(home(t), line)
+			require.Error(t, err)
+			require.Nil(t, b)
+		})
+	}
+}
+
+func TestNewFromParsedRejectsEmptyName(t *testing.T) {
+	b, err := NewFromParsed(home(t), bundleparse.Bundle{})
+	require.Error(t, err)
+	require.Nil(t, b)
 }
 
 func TestPinRequiresFullSHA(t *testing.T) {
