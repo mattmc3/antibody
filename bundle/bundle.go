@@ -61,7 +61,7 @@ func NewFromParsed(home string, parsed bundleparse.Bundle) (Bundle, error) {
 
 	var proj project.Project
 	var err error
-	if strings.HasPrefix(parsed.Name, "/") || strings.HasPrefix(parsed.Name, "~/") {
+	if project.IsLocal(parsed.Name) {
 		proj, err = project.NewLocal(parsed.Name)
 		if err != nil {
 			return nil, err
@@ -116,7 +116,7 @@ var pinSHAPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
 // validatePin requires full 40-character commit SHAs for repo bundles.
 // Local bundles ignore pins.
 func validatePin(parsed bundleparse.Bundle) error {
-	if parsed.Pin == "" || strings.HasPrefix(parsed.Name, "/") || strings.HasPrefix(parsed.Name, "~/") {
+	if parsed.Pin == "" || project.IsLocal(parsed.Name) {
 		return nil
 	}
 	if !pinSHAPattern.MatchString(parsed.Pin) {

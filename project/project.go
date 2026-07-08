@@ -2,7 +2,6 @@ package project
 
 import (
 	"os"
-	"strings"
 
 	"golang.org/x/sync/errgroup"
 )
@@ -16,7 +15,7 @@ type Project interface {
 
 // New decides what kind of project it is, based on the given line
 func New(home, line string) (Project, error) {
-	if line[0] == '/' || strings.HasPrefix(line, "~/") {
+	if IsLocal(line) {
 		return NewLocal(line)
 	}
 	return NewGit(home, line), nil

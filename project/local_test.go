@@ -23,3 +23,22 @@ func TestLocalProjectRelativeToHome(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, filepath.Join(home, "tmp"), proj.Path())
 }
+
+func TestLocalProjectEnvVar(t *testing.T) {
+	// $VAR names are never expanded and never hit the filesystem
+	proj, err := New(t.TempDir(), "$MYPLUGS/myplug")
+	require.NoError(t, err)
+	require.Equal(t, "$MYPLUGS/myplug", proj.Path())
+	require.NoError(t, proj.Download())
+	require.NoError(t, proj.Update())
+	_, ok := proj.(localProject)
+	require.True(t, ok)
+}
+
+func TestLocalProjectRelativePath(t *testing.T) {
+	proj, err := New(t.TempDir(), "./myplug")
+	require.NoError(t, err)
+	require.Equal(t, "./myplug", proj.Path())
+	_, ok := proj.(localProject)
+	require.True(t, ok)
+}

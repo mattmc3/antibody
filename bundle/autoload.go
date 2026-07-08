@@ -16,7 +16,7 @@ func (b autoloadBundle) Get() (result string, err error) {
 	if err = b.Project.Download(); err != nil {
 		return result, err
 	}
-	return autoloadLines(b.Project.Path(), b.FpathRule), nil
+	return autoloadLines(display(b.Project, b.Project.Path()), b.FpathRule), nil
 }
 
 // autoloadAnnotationBundle wraps an inner bundle, prepending autoload lines
@@ -33,7 +33,7 @@ func (b autoloadAnnotationBundle) Get() (result string, err error) {
 	if err != nil {
 		return "", err
 	}
-	dir := filepath.Join(b.project.Path(), b.subPath)
+	dir := display(b.project, filepath.Join(b.project.Path(), b.subPath))
 	prefix := autoloadLines(dir, b.fpathRule)
 	if inner == "" {
 		return prefix, nil

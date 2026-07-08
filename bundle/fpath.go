@@ -16,13 +16,12 @@ func (bundle fpathBundle) Get() (result string, err error) {
 	if err = bundle.Project.Download(); err != nil {
 		return result, err
 	}
-	return fpathLine(bundle.Project.Path(), bundle.FpathRule), nil
+	return fpathLine(display(bundle.Project, bundle.Project.Path()), bundle.FpathRule), nil
 }
 
-// fpathLine returns the appropriate fpath assignment for a directory.
-// If rule is empty the global config value is used.
+// fpathLine returns the appropriate fpath assignment for a directory,
+// already in display form. If rule is empty the global config value is used.
 func fpathLine(dir, rule string) string {
-	dir = displayPath(dir)
 	if resolvedFpathRule(rule) == "prepend" {
 		return fmt.Sprintf("fpath=( %s $fpath )", dir)
 	}

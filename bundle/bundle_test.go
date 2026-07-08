@@ -201,6 +201,66 @@ func TestFpathBeforeSource(t *testing.T) {
 	require.True(t, strings.HasPrefix(lines[1], "source "), "want source line second, got: %s", result)
 }
 
+func TestEnvVarLocalBundle(t *testing.T) {
+	t.Run("dir", func(t *testing.T) {
+		// var need not be set: emitted literally, init file assumed
+		b, err := New(home(t), "$MYPLUGS/myplug")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.Equal(t, "fpath+=( $MYPLUGS/myplug )\nsource $MYPLUGS/myplug/myplug.plugin.zsh", result)
+	})
+
+	t.Run("path", func(t *testing.T) {
+		b, err := New(home(t), "$MYPLUGS/myplug kind:path")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.Equal(t, `export PATH="$MYPLUGS/myplug:$PATH"`, result)
+	})
+
+	t.Run("file", func(t *testing.T) {
+		plugins := t.TempDir()
+		t.Setenv("MYPLUGS", plugins)
+		// nolint: gosec
+		require.NoError(t, os.WriteFile(filepath.Join(plugins, "single.zsh"), []byte(""), 0644))
+		b, err := New(home(t), "$MYPLUGS/single.zsh")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.Equal(t, "source $MYPLUGS/single.zsh", result)
+	})
+
+	t.Run("no expansion or globbing", func(t *testing.T) {
+		plugins := t.TempDir()
+		t.Setenv("MYPLUGS", plugins)
+		dir := filepath.Join(plugins, "oddplug")
+		require.NoError(t, os.MkdirAll(dir, 0755))
+		// nolint: gosec
+		require.NoError(t, os.WriteFile(filepath.Join(dir, "other.plugin.zsh"), []byte(""), 0644))
+		b, err := New(home(t), "$MYPLUGS/oddplug")
+		require.NoError(t, err)
+		result, err := b.Get()
+		require.NoError(t, err)
+		require.Equal(t, "fpath+=( $MYPLUGS/oddplug )\nsource $MYPLUGS/oddplug/oddplug.plugin.zsh", result)
+	})
+}
+
+func TestRelativeLocalBundle(t *testing.T) {
+	base := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(base, "myplug"), 0755))
+	// nolint: gosec
+	require.NoError(t, os.WriteFile(filepath.Join(base, "myplug", "myplug.plugin.zsh"), []byte(""), 0644))
+	t.Chdir(base)
+
+	b, err := New(home(t), "./myplug")
+	require.NoError(t, err)
+	result, err := b.Get()
+	require.NoError(t, err)
+	require.Contains(t, result, "fpath+=( ./myplug )")
+	require.Contains(t, result, "source ./myplug/myplug.plugin.zsh")
+}
+
 func TestHomeSubstitution(t *testing.T) {
 	fakeHome := t.TempDir()
 	t.Setenv("HOME", fakeHome)
