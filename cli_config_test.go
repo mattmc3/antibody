@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 // writeConfig writes an antibody.toml under the XDG config dir runCLI uses.
@@ -50,7 +50,7 @@ func TestCLIConfigGitDomain(t *testing.T) {
 	writeConfig(t, home, "[git]\ndomain = \"localhost:1\"\n")
 
 	res := runCLI(t, home, "", "bundle", "foo/bar")
-	require.NotEqual(t, 0, res.exitCode)
+	require.That(t, res.exitCode != 0, "expected failure exit code")
 	require.Contains(t, res.stderr, "https://localhost:1/foo/bar")
 }
 
@@ -59,6 +59,6 @@ func TestCLIConfigMalformed(t *testing.T) {
 	writeConfig(t, home, "not [valid toml\n")
 
 	res := runCLI(t, home, "", "home")
-	require.NotEqual(t, 0, res.exitCode)
+	require.That(t, res.exitCode != 0, "expected failure exit code")
 	require.Contains(t, res.stderr, "failed to parse config")
 }

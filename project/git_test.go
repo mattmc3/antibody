@@ -10,7 +10,7 @@ import (
 
 	"github.com/mattmc3/antibody/internal/config"
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestUpdateNonExistentLocalRepo(t *testing.T) {
@@ -119,13 +119,13 @@ func TestFolderNamingUnparseableURL(t *testing.T) {
 func TestSubFolder(t *testing.T) {
 	home := home(t)
 	repo := newGitT(t, home, "ohmyzsh/ohmyzsh path:plugins/aws")
-	require.True(t, strings.HasSuffix(repo.Path(), "plugins/aws"))
+	require.That(t, strings.HasSuffix(repo.Path(), "plugins/aws"))
 }
 
 func TestPath(t *testing.T) {
 	home := home(t)
 	repo := newGitT(t, home, "docker/cli path:contrib/completion/zsh/_docker")
-	require.True(t, strings.HasSuffix(repo.Path(), "contrib/completion/zsh/_docker"))
+	require.That(t, strings.HasSuffix(repo.Path(), "contrib/completion/zsh/_docker"))
 }
 
 func TestDownloadPinnedRepo(t *testing.T) {
@@ -159,7 +159,7 @@ func TestDownloadAnotherBranch(t *testing.T) {
 	require.NoError(t, repo.Download())
 	cloneSHA, err := commit(repo.Path())
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(branchSHA, cloneSHA))
+	require.That(t, strings.HasPrefix(branchSHA, cloneSHA))
 }
 
 func TestUpdateAnotherBranch(t *testing.T) {
@@ -173,7 +173,7 @@ func TestUpdateAnotherBranch(t *testing.T) {
 	require.NoError(t, repo.Download())
 	folders, err := List(home)
 	require.NoError(t, err)
-	require.Len(t, folders, 1)
+	require.Equal(t, 1, len(folders))
 	require.NoError(t, NewClonedGit(home, folders[0]).Update())
 }
 
@@ -184,7 +184,7 @@ func TestUpdateExistentLocalRepo(t *testing.T) {
 	require.NoError(t, repo.Download())
 	folders, err := List(home)
 	require.NoError(t, err)
-	require.Len(t, folders, 1)
+	require.Equal(t, 1, len(folders))
 	require.NoError(t, NewClonedGit(home, folders[0]).Update())
 }
 
@@ -221,7 +221,7 @@ func TestUpdatePullsUpstreamCommit(t *testing.T) {
 	require.NoError(t, repo.Update())
 	cloneSHA, err := commit(repo.Path())
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(newSHA, cloneSHA))
+	require.That(t, strings.HasPrefix(newSHA, cloneSHA))
 }
 
 func TestUpdateSkipsPinnedRepo(t *testing.T) {
@@ -235,7 +235,7 @@ func TestUpdateSkipsPinnedRepo(t *testing.T) {
 	require.NoError(t, Update(home, 1))
 	cloneSHA, err := commit(repo.Path())
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(sha, cloneSHA))
+	require.That(t, strings.HasPrefix(sha, cloneSHA))
 }
 
 func TestDownloadPinnedToOlderCommit(t *testing.T) {
@@ -249,7 +249,7 @@ func TestDownloadPinnedToOlderCommit(t *testing.T) {
 	require.NoError(t, repo.Download())
 	cloneSHA, err := commit(repo.Path())
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(oldSHA, cloneSHA))
+	require.That(t, strings.HasPrefix(oldSHA, cloneSHA))
 }
 
 func TestDownloadBranchTag(t *testing.T) {
@@ -263,7 +263,7 @@ func TestDownloadBranchTag(t *testing.T) {
 	require.NoError(t, repo.Download())
 	cloneSHA, err := commit(repo.Path())
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(tagSHA, cloneSHA))
+	require.That(t, strings.HasPrefix(tagSHA, cloneSHA))
 }
 
 func TestDownloadAdvancePin(t *testing.T) {
@@ -279,11 +279,11 @@ func TestDownloadAdvancePin(t *testing.T) {
 	newPin := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), newSHA))
 	require.NoError(t, newPin.Download())
 
-	require.NotEqual(t, oldPin.Path(), newPin.Path())
+	require.That(t, oldPin.Path() != newPin.Path(), "pins should clone to distinct dirs: %s", oldPin.Path())
 	for repo, sha := range map[Project]string{oldPin: oldSHA, newPin: newSHA} {
 		cloneSHA, err := commit(repo.Path())
 		require.NoError(t, err)
-		require.True(t, strings.HasPrefix(sha, cloneSHA))
+		require.That(t, strings.HasPrefix(sha, cloneSHA))
 	}
 	require.NoError(t, Update(home, 1))
 }
@@ -303,7 +303,7 @@ func TestUpdateIgnoresStalePinConfig(t *testing.T) {
 	require.NoError(t, Update(home, 1))
 	cloneSHA, err := commit(repo.Path())
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(newSHA, cloneSHA))
+	require.That(t, strings.HasPrefix(newSHA, cloneSHA))
 }
 
 // Characterizes current behavior: an existing clone is never re-cloned or
@@ -321,7 +321,7 @@ func TestDownloadExistingCloneIgnoresBranchChange(t *testing.T) {
 	require.NoError(t, repo.Download())
 	cloneSHA, err := commit(repo.Path())
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(mainSHA, cloneSHA))
+	require.That(t, strings.HasPrefix(mainSHA, cloneSHA))
 }
 
 // Characterizes a latent shallow-clone bug: after an upstream history
@@ -355,7 +355,8 @@ func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
 	sha := "lmnop"
 	repo := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
 	require.Error(t, repo.Download())
-	require.NoDirExists(t, repo.Path())
+	_, statErr := os.Stat(repo.Path())
+	require.That(t, os.IsNotExist(statErr), "clone dir should not exist: %s", repo.Path())
 }
 
 // Existing clones must load without spawning git at all; bundle runs on

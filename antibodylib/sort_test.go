@@ -3,7 +3,7 @@ package antibodylib
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 // Output lines must come back in input order regardless of the order

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 // Integration tests clone real repos over the network.
@@ -36,7 +36,7 @@ func TestBundleLargeCorpus(t *testing.T) {
 			active++
 		}
 	}
-	require.Greater(t, active, 100, "corpus unexpectedly small")
+	require.That(t, active > 100, "corpus unexpectedly small: %d", active)
 
 	home := home(t)
 	sh, err := New(
@@ -52,11 +52,11 @@ func TestBundleLargeCorpus(t *testing.T) {
 			sources++
 		}
 	}
-	require.GreaterOrEqual(t, sources, active)
+	require.That(t, sources >= active, "sources %d < active %d", sources, active)
 
 	cloned, err := os.ReadDir(home)
 	require.NoError(t, err)
-	require.Len(t, cloned, active)
+	require.Equal(t, active, len(cloned))
 }
 
 // BenchmarkDownload-8   	       1	2907868713 ns/op	  480296 B/op	    2996 allocs/op v1

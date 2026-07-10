@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 // nolint: gochecknoglobals
@@ -58,7 +58,7 @@ func runCLI(t *testing.T, home, stdin string, args ...string) cliResult {
 	code := 0
 	if err != nil {
 		exitErr, ok := err.(*exec.ExitError)
-		require.True(t, ok, "antibody did not run: %v", err)
+		require.That(t, ok, "antibody did not run: %v", err)
 		code = exitErr.ExitCode()
 	}
 	return cliResult{stdout: out.String(), stderr: errb.String(), exitCode: code}
@@ -93,7 +93,7 @@ func TestCLIBundleStdin(t *testing.T) {
 
 func TestCLIBundleError(t *testing.T) {
 	res := runCLI(t, t.TempDir(), "", "bundle", "file:///this/path/does/not/exist")
-	require.NotEqual(t, 0, res.exitCode)
+	require.That(t, res.exitCode != 0, "expected failure exit code")
 	require.Contains(t, res.stderr, "antibody: error: failed to bundle")
 }
 
@@ -119,7 +119,7 @@ func TestCLIListAndPath(t *testing.T) {
 	require.Contains(t, path.stdout, home)
 
 	missing := runCLI(t, home, "", "path", "not/cloned")
-	require.NotEqual(t, 0, missing.exitCode)
+	require.That(t, missing.exitCode != 0, "expected failure exit code")
 	require.Contains(t, missing.stderr, "does not exist in cloned paths")
 }
 
@@ -135,11 +135,11 @@ func TestCLIPurge(t *testing.T) {
 	entries, err := os.ReadDir(home)
 	require.NoError(t, err)
 	for _, e := range entries {
-		require.False(t, strings.Contains(e.Name(), "-SLASH-"), "clone left behind: %s", e.Name())
+		require.NotContains(t, e.Name(), "-SLASH-", "clone left behind: %s", e.Name())
 	}
 
 	again := runCLI(t, home, "", "purge", upstream.URL())
-	require.NotEqual(t, 0, again.exitCode)
+	require.That(t, again.exitCode != 0, "expected failure exit code")
 	require.Contains(t, again.stderr, "does not exist")
 }
 
@@ -236,7 +236,7 @@ func TestCLIUsageErrors(t *testing.T) {
 	}
 	for name, args := range cases {
 		res := runCLI(t, t.TempDir(), "", args...)
-		require.NotEqual(t, 0, res.exitCode, name)
+		require.That(t, res.exitCode != 0, name)
 		require.Contains(t, res.stderr, "antibody: error:", name)
 	}
 }
@@ -247,6 +247,6 @@ func TestCLICompletions(t *testing.T) {
 	require.Contains(t, res.stdout, "#compdef antibody")
 
 	bad := runCLI(t, t.TempDir(), "", "completions", "fish")
-	require.NotEqual(t, 0, bad.exitCode)
+	require.That(t, bad.exitCode != 0, "expected failure exit code")
 	require.Contains(t, bad.stderr, "antibody: error:")
 }

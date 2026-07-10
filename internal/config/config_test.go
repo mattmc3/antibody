@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 func resetSingleton(t *testing.T) {
@@ -38,7 +38,7 @@ func TestConfigPath_NoXDG(t *testing.T) {
 func TestLoadFile_Missing(t *testing.T) {
 	cfg, err := loadFile(testdata("nonexistent.toml"))
 	require.NoError(t, err)
-	require.NotNil(t, cfg)
+	require.That(t, cfg != nil)
 }
 
 func TestLoadFile_Valid(t *testing.T) {
@@ -59,14 +59,14 @@ func TestLoadFile_Malformed(t *testing.T) {
 func TestGet_BeforeLoad(t *testing.T) {
 	resetSingleton(t)
 	cfg := Get()
-	require.NotNil(t, cfg)
+	require.That(t, cfg != nil)
 }
 
 func TestGet_AfterLoad(t *testing.T) {
 	resetSingleton(t)
 	instance, _ = loadFile(testdata("antibody.toml"))
 	cfg := Get()
-	require.NotNil(t, cfg)
+	require.That(t, cfg != nil)
 }
 
 func TestConfig_GitDomain(t *testing.T) {
@@ -177,5 +177,5 @@ func TestConfig_HomeDir_Default(t *testing.T) {
 	cfg := &Config{}
 	dir, err := cfg.HomeDir()
 	require.NoError(t, err)
-	require.True(t, strings.HasSuffix(dir, "antibody"), "got: %s", dir)
+	require.That(t, strings.HasSuffix(dir, "antibody"), "got: %s", dir)
 }

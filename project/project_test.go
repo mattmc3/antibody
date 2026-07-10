@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestList(t *testing.T) {
@@ -19,7 +19,7 @@ func TestList(t *testing.T) {
 	require.NoError(t, proj.Download())
 	list, err := List(home)
 	require.NoError(t, err)
-	require.Len(t, list, 1)
+	require.Equal(t, 1, len(list))
 }
 
 func TestUpdate(t *testing.T) {
@@ -66,7 +66,7 @@ func TestSymlinkedHome(t *testing.T) {
 	require.NoError(t, repo.Download())
 	list, err := List(link)
 	require.NoError(t, err)
-	require.Len(t, list, 1)
+	require.Equal(t, 1, len(list))
 	require.NoError(t, Update(link, 1))
 }
 
@@ -74,13 +74,13 @@ func TestListEmptyFolder(t *testing.T) {
 	home := home(t)
 	list, err := List(home)
 	require.NoError(t, err)
-	require.Len(t, list, 0)
+	require.Equal(t, 0, len(list))
 }
 
 func TestListNonExistentFolder(t *testing.T) {
 	list, err := List("/tmp/asdasdadadwhateverwtff")
 	require.Error(t, err)
-	require.Len(t, list, 0)
+	require.Equal(t, 0, len(list))
 }
 
 func TestUpdateNonExistentHome(t *testing.T) {

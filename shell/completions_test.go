@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/mattmc3/antibody/internal/config"
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestCompletionsZsh(t *testing.T) {

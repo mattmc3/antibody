@@ -4,14 +4,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestNewRepo(t *testing.T) {
 	r := New(t)
 	require.DirExists(t, filepath.Join(r.Dir, ".git"))
 	require.FileExists(t, filepath.Join(r.Dir, "file.txt"))
-	require.Len(t, r.HEAD(), 40)
+	require.Equal(t, 40, len(r.HEAD()))
 	require.Equal(t, "file://"+r.Dir, r.URL())
 }
 
@@ -20,7 +20,7 @@ func TestCommitAdvancesHead(t *testing.T) {
 	first := r.HEAD()
 	r.WriteFile("myplugin.plugin.zsh", "echo myplugin\n")
 	second := r.Commit("add plugin file")
-	require.NotEqual(t, first, second)
+	require.That(t, first != second, "commit should advance HEAD: %s", first)
 	require.Equal(t, second, r.HEAD())
 }
 
@@ -36,7 +36,7 @@ func TestBranchAndCheckout(t *testing.T) {
 	r.Branch("v1")
 	r.WriteFile("v1.txt", "v1\n")
 	branched := r.Commit("v1 work")
-	require.NotEqual(t, main, branched)
+	require.That(t, main != branched, "branch should diverge from main: %s", main)
 	r.Checkout("main")
 	require.Equal(t, main, r.HEAD())
 }

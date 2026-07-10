@@ -3,13 +3,13 @@ package shell
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestGeneratesInit(t *testing.T) {
 	shell, err := Init()
 	require.NoError(t, err)
-	require.NotEmpty(t, shell)
+	require.That(t, shell != "", "init script is empty")
 }
 
 // Args must be quoted or arguments with spaces word-split in zsh.
@@ -17,7 +17,7 @@ func TestInitQuotesArgs(t *testing.T) {
 	shell, err := Init()
 	require.NoError(t, err)
 	require.Contains(t, shell, `"$@"`)
-	require.NotRegexp(t, `\$@[^"]`, shell)
+	require.NotMatch(t, `\$@[^"]`, shell)
 }
 
 func TestInitUsesCompletionsSubcommand(t *testing.T) {

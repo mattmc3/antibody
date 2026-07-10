@@ -3,7 +3,7 @@ package bundle
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 // Integration tests clone real repos over the network.

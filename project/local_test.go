@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestLocalProject(t *testing.T) {
@@ -32,7 +32,7 @@ func TestLocalProjectEnvVar(t *testing.T) {
 	require.NoError(t, proj.Download())
 	require.NoError(t, proj.Update())
 	_, ok := proj.(localProject)
-	require.True(t, ok)
+	require.That(t, ok)
 }
 
 func TestLocalProjectRelativePath(t *testing.T) {
@@ -40,5 +40,5 @@ func TestLocalProjectRelativePath(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "./myplug", proj.Path())
 	_, ok := proj.(localProject)
-	require.True(t, ok)
+	require.That(t, ok)
 }

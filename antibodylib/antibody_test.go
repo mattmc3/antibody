@@ -10,7 +10,7 @@ import (
 
 	"github.com/mattmc3/antibody/internal/config"
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 // escapedDir returns the clone folder a URL lands in under home.
@@ -57,7 +57,7 @@ func TestAntibody(t *testing.T) {
 	require.NoError(t, err)
 	files, err := os.ReadDir(home)
 	require.NoError(t, err)
-	require.Len(t, files, 3)
+	require.Equal(t, 3, len(files))
 	require.Contains(t, sh, `export PATH="/tmp:$PATH"`)
 	require.Contains(t, sh, `export PATH="`+escapedDir(home, rPath.URL())+`:$PATH"`)
 	require.Contains(t, sh, `export PATH="`+escapedDir(home, rBranch.URL())+`:$PATH"`)
@@ -69,7 +69,7 @@ func TestAntibodyError(t *testing.T) {
 	bundles := bytes.NewBufferString("file:///this/path/does/not/exist")
 	sh, err := New(home, bundles, runtime.NumCPU()).Bundle()
 	require.Error(t, err)
-	require.Empty(t, sh)
+	require.Equal(t, "", sh)
 }
 
 func TestMultipleRepositories(t *testing.T) {
@@ -100,15 +100,15 @@ func TestMultipleRepositories(t *testing.T) {
 	).Bundle()
 	require.NoError(t, err)
 	// path repo: 1 line; dupe twice: 4; two inner paths: 4; last: 2
-	require.Len(t, strings.Split(sh, "\n"), 11)
-	require.True(
+	require.Equal(t, 11, len(strings.Split(sh, "\n")))
+	require.That(
 		t,
 		strings.HasSuffix(sh, filepath.Join(escapedDir(home, rLast.URL()), "myplugin.plugin.zsh")+`"`),
 		"last bundle should come last, got: %s", sh,
 	)
 	files, err := os.ReadDir(home)
 	require.NoError(t, err)
-	require.Len(t, files, 4)
+	require.Equal(t, 4, len(files))
 }
 
 // useDeferFixture points the config singleton at a local defer bundle so

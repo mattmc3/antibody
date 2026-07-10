@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 // Integration tests clone real repos over the network.
@@ -51,5 +51,5 @@ func TestDownloadSubmodules(t *testing.T) {
 	require.NoError(t, proj.Update())
 	files, err := os.ReadDir(module)
 	require.NoError(t, err)
-	require.True(t, len(files) > 1)
+	require.That(t, len(files) > 1)
 }

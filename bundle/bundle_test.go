@@ -9,7 +9,7 @@ import (
 
 	"github.com/getantidote/bundleparse"
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/stretchr/testify/require"
+	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestSuccessfullGitBundles(t *testing.T) {
@@ -136,7 +136,7 @@ func TestDecoratedLocalBundle(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.True(t, strings.HasPrefix(result, "my_pre_cmd\n"))
+		require.That(t, strings.HasPrefix(result, "my_pre_cmd\n"))
 	})
 
 	t.Run("post", func(t *testing.T) {
@@ -144,7 +144,7 @@ func TestDecoratedLocalBundle(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.True(t, strings.HasSuffix(result, "\nmy_post_cmd"))
+		require.That(t, strings.HasSuffix(result, "\nmy_post_cmd"))
 	})
 
 	t.Run("conditional", func(t *testing.T) {
@@ -152,8 +152,8 @@ func TestDecoratedLocalBundle(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.True(t, strings.HasPrefix(result, "if is_mac; then\n"))
-		require.True(t, strings.HasSuffix(result, "\nfi"))
+		require.That(t, strings.HasPrefix(result, "if is_mac; then\n"))
+		require.That(t, strings.HasSuffix(result, "\nfi"))
 	})
 }
 
@@ -171,9 +171,9 @@ func TestPathsWithSpaces(t *testing.T) {
 		result, err := b.Get()
 		require.NoError(t, err)
 		lines := strings.Split(result, "\n")
-		require.Len(t, lines, 2)
-		require.Regexp(t, `^fpath\+=\( ".* with spaces.*" \)$`, lines[0])
-		require.Regexp(t, `^source ".* with spaces.*/myplugin\.plugin\.zsh"$`, lines[1])
+		require.Equal(t, 2, len(lines))
+		require.Match(t, `^fpath\+=\( ".* with spaces.*" \)$`, lines[0])
+		require.Match(t, `^source ".* with spaces.*/myplugin\.plugin\.zsh"$`, lines[1])
 	})
 
 	t.Run("fpath", func(t *testing.T) {
@@ -181,7 +181,7 @@ func TestPathsWithSpaces(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.Regexp(t, `^fpath\+=\( ".* with spaces.*" \)$`, result)
+		require.Match(t, `^fpath\+=\( ".* with spaces.*" \)$`, result)
 	})
 
 	t.Run("defer", func(t *testing.T) {
@@ -189,7 +189,7 @@ func TestPathsWithSpaces(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.Regexp(t, `zsh-defer source ".* with spaces.*/myplugin\.plugin\.zsh"`, result)
+		require.Match(t, `zsh-defer source ".* with spaces.*/myplugin\.plugin\.zsh"`, result)
 	})
 }
 
@@ -203,7 +203,7 @@ func TestQuotedAnnotationValues(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.True(t, strings.HasPrefix(result, "echo hello world\n"), "got: %s", result)
+		require.That(t, strings.HasPrefix(result, "echo hello world\n"), "got: %s", result)
 	})
 
 	t.Run("single quotes", func(t *testing.T) {
@@ -211,7 +211,7 @@ func TestQuotedAnnotationValues(t *testing.T) {
 		require.NoError(t, err)
 		result, err := b.Get()
 		require.NoError(t, err)
-		require.True(t, strings.HasSuffix(result, "\necho bye bye"), "got: %s", result)
+		require.That(t, strings.HasSuffix(result, "\necho bye bye"), "got: %s", result)
 	})
 }
 
@@ -223,7 +223,7 @@ func TestFpathRuleAnnotation(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(home, "_func"), []byte(""), 0644))
 	result, err := b.Get()
 	require.NoError(t, err)
-	require.True(t, strings.HasPrefix(result, "fpath=( "), "got: %s", result)
+	require.That(t, strings.HasPrefix(result, "fpath=( "), "got: %s", result)
 }
 
 func TestAutoloadLocalBundle(t *testing.T) {
@@ -262,7 +262,7 @@ func TestDeferLocalBundle(t *testing.T) {
 	require.Contains(t, result, "zsh-defer source ")
 	for line := range strings.SplitSeq(result, "\n") {
 		if strings.HasPrefix(line, "fpath") {
-			require.False(t, strings.HasPrefix(line, "zsh-defer"), "fpath line should not be deferred: %q", line)
+			require.That(t, !strings.HasPrefix(line, "zsh-defer"), "fpath line should not be deferred: %q", line)
 		}
 	}
 }
@@ -276,8 +276,8 @@ func TestFpathBeforeSource(t *testing.T) {
 	result, err := b.Get()
 	require.NoError(t, err)
 	lines := strings.Split(result, "\n")
-	require.True(t, strings.HasPrefix(lines[0], "fpath+=( "), "want fpath line first, got: %s", result)
-	require.True(t, strings.HasPrefix(lines[1], "source "), "want source line second, got: %s", result)
+	require.That(t, strings.HasPrefix(lines[0], "fpath+=( "), "want fpath line first, got: %s", result)
+	require.That(t, strings.HasPrefix(lines[1], "source "), "want source line second, got: %s", result)
 }
 
 func TestEnvVarLocalBundle(t *testing.T) {
@@ -404,7 +404,7 @@ func TestDeferredPost(t *testing.T) {
 	require.NoError(t, err)
 	result, err := b.Get()
 	require.NoError(t, err)
-	require.True(t, strings.HasSuffix(result, "\nzsh-defer my_post_cmd"), "post should be deferred, got: %s", result)
+	require.That(t, strings.HasSuffix(result, "\nzsh-defer my_post_cmd"), "post should be deferred, got: %s", result)
 }
 
 // Non-bundle lines must error, not build a bundle around a garbage
@@ -414,7 +414,7 @@ func TestNewRejectsNonBundleLines(t *testing.T) {
 		t.Run("line "+line, func(t *testing.T) {
 			b, err := New(home(t), line)
 			require.Error(t, err)
-			require.Nil(t, b)
+			require.That(t, b == nil)
 		})
 	}
 }
@@ -422,7 +422,7 @@ func TestNewRejectsNonBundleLines(t *testing.T) {
 func TestNewFromParsedRejectsEmptyName(t *testing.T) {
 	b, err := NewFromParsed(home(t), bundleparse.Bundle{})
 	require.Error(t, err)
-	require.Nil(t, b)
+	require.That(t, b == nil)
 }
 
 // A pinned clone folder carries a /tree/<sha> suffix; the sha must not
