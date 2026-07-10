@@ -57,6 +57,8 @@ build:
     go build
 
 # Format all go files
+alias format := fmt
+
 fmt:
     go fmt ./...
 
