@@ -5,7 +5,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/getantidote/bundleparse"
+	"github.com/mattmc3/antibody/bundleparse"
 	"github.com/mattmc3/antibody/bundle"
 	"github.com/mattmc3/antibody/internal/config"
 	"golang.org/x/sync/errgroup"

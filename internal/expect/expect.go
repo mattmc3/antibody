@@ -12,6 +12,7 @@ package expect
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -60,6 +61,16 @@ func AnError(err error) Check {
 func Equals[T comparable](want, got T) Check {
 	return Check{
 		ok:  want == got,
+		pos: "not equal:\n" + describe(want, got),
+		neg: fmt.Sprintf("should not be equal: %#v", got),
+	}
+}
+
+// DeepEquals compares with reflect.DeepEqual, for values Equals cannot
+// take, like structs holding maps or slices.
+func DeepEquals(want, got any) Check {
+	return Check{
+		ok:  reflect.DeepEqual(want, got),
 		pos: "not equal:\n" + describe(want, got),
 		neg: fmt.Sprintf("should not be equal: %#v", got),
 	}

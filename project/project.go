@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/getantidote/bundleparse"
+	"github.com/mattmc3/antibody/bundleparse"
 	"golang.org/x/sync/errgroup"
 )
 

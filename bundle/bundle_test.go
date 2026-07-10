@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/getantidote/bundleparse"
+	"github.com/mattmc3/antibody/bundleparse"
 	. "github.com/mattmc3/antibody/internal/expect"
 	"github.com/mattmc3/antibody/internal/gittest"
 )
