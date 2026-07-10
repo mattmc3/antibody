@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.0.1] - 2026-07-10
+
+### Changed
+- Replaced the kingpin CLI library with Go standard library flag parsing;
+  help output is reformatted slightly and stacked short flags (eg: `-du`)
+  are no longer accepted
+- Replaced testify with an internal assertion package; antibody now has
+  no test-only dependencies
+- Absorbed the bundleparse library into this repo as an importable
+  package; go.mod is down to x/sync and BurntSushi/toml
+
+### Fixed
+- `antibody help <command>` and `-h` after a subcommand show that
+  command's usage
+
 ## [7.0.0] - 2026-07-05
 
 ### Added
