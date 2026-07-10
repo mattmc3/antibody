@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/mattmc3/antibody/internal/config"
+	. "github.com/mattmc3/antibody/internal/expect"
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/mattmc3/antibody/internal/require"
 )
 
 // escapedDir returns the clone folder a URL lands in under home.
@@ -54,22 +54,22 @@ func TestAntibody(t *testing.T) {
 		bytes.NewBufferString(strings.Join(bundles, "\n")),
 		runtime.NumCPU(),
 	).Bundle()
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	files, err := os.ReadDir(home)
-	require.NoError(t, err)
-	require.Equal(t, 3, len(files))
-	require.Contains(t, sh, `export PATH="/tmp:$PATH"`)
-	require.Contains(t, sh, `export PATH="`+escapedDir(home, rPath.URL())+`:$PATH"`)
-	require.Contains(t, sh, `export PATH="`+escapedDir(home, rBranch.URL())+`:$PATH"`)
-	require.Contains(t, sh, `source "`+filepath.Join(escapedDir(home, rZsh.URL()), "myplugin.plugin.zsh")+`"`)
+	Expect(t, NoError(err))
+	Expect(t, Equals(3, len(files)))
+	Expect(t, Contains(sh, `export PATH="/tmp:$PATH"`))
+	Expect(t, Contains(sh, `export PATH="`+escapedDir(home, rPath.URL())+`:$PATH"`))
+	Expect(t, Contains(sh, `export PATH="`+escapedDir(home, rBranch.URL())+`:$PATH"`))
+	Expect(t, Contains(sh, `source "`+filepath.Join(escapedDir(home, rZsh.URL()), "myplugin.plugin.zsh")+`"`))
 }
 
 func TestAntibodyError(t *testing.T) {
 	home := home(t)
 	bundles := bytes.NewBufferString("file:///this/path/does/not/exist")
 	sh, err := New(home, bundles, runtime.NumCPU()).Bundle()
-	require.Error(t, err)
-	require.Equal(t, "", sh)
+	Expect(t, AnError(err))
+	Expect(t, Equals("", sh))
 }
 
 func TestMultipleRepositories(t *testing.T) {
@@ -98,17 +98,17 @@ func TestMultipleRepositories(t *testing.T) {
 		bytes.NewBufferString(strings.Join(bundles, "\n")),
 		runtime.NumCPU(),
 	).Bundle()
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	// path repo: 1 line; dupe twice: 4; two inner paths: 4; last: 2
-	require.Equal(t, 11, len(strings.Split(sh, "\n")))
-	require.That(
+	Expect(t, Equals(11, len(strings.Split(sh, "\n"))))
+	Expect(
 		t,
 		strings.HasSuffix(sh, filepath.Join(escapedDir(home, rLast.URL()), "myplugin.plugin.zsh")+`"`),
 		"last bundle should come last, got: %s", sh,
 	)
 	files, err := os.ReadDir(home)
-	require.NoError(t, err)
-	require.Equal(t, 4, len(files))
+	Expect(t, NoError(err))
+	Expect(t, Equals(4, len(files)))
 }
 
 // useDeferFixture points the config singleton at a local defer bundle so
@@ -120,20 +120,20 @@ func useDeferFixture(t *testing.T) *gittest.Repo {
 	deferRepo.Commit("add plugin file")
 
 	cfgDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(cfgDir, "antibody"), 0o755))
+	Expect(t, NoError(os.MkdirAll(filepath.Join(cfgDir, "antibody"), 0o755)))
 	toml := "[defer]\nbundle = \"" + deferRepo.URL() + "\"\n"
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(cfgDir, "antibody", "antibody.toml"), []byte(toml), 0o644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(cfgDir, "antibody", "antibody.toml"), []byte(toml), 0o644)))
 
 	// Cleanup registered before Setenv so it runs after the env is
 	// restored, reloading the default config.
 	t.Cleanup(func() {
 		_, err := config.Load()
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 	})
 	t.Setenv("XDG_CONFIG_HOME", cfgDir)
 	_, err := config.Load()
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	return deferRepo
 }
 
@@ -151,16 +151,16 @@ func TestDeferEnsureInjectedOnce(t *testing.T) {
 		bytes.NewBufferString(strings.Join(bundles, "\n")),
 		runtime.NumCPU(),
 	).Bundle()
-	require.NoError(t, err)
-	require.Equal(t, 1, strings.Count(sh, "if ! (( $+functions[zsh-defer] )); then"))
-	require.Equal(t, 2, strings.Count(sh, "zsh-defer source "))
+	Expect(t, NoError(err))
+	Expect(t, Equals(1, strings.Count(sh, "if ! (( $+functions[zsh-defer] )); then")))
+	Expect(t, Equals(2, strings.Count(sh, "zsh-defer source ")))
 }
 
 func TestUsingDirective(t *testing.T) {
 	home := home(t)
 	repo := t.TempDir()
 
-	require.NoError(t, os.WriteFile(filepath.Join(repo, "myplugin.plugin.zsh"), []byte("echo hi"), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(repo, "myplugin.plugin.zsh"), []byte("echo hi"), 0644)))
 
 	bundles := []string{
 		"using:" + repo,
@@ -169,34 +169,34 @@ func TestUsingDirective(t *testing.T) {
 	}
 
 	sh, err := New(home, bytes.NewBufferString(strings.Join(bundles, "\n")), runtime.NumCPU()).Bundle()
-	require.NoError(t, err)
-	require.Contains(t, sh, `source "`+filepath.Join(repo, "myplugin.plugin.zsh")+`"`)
+	Expect(t, NoError(err))
+	Expect(t, Contains(sh, `source "`+filepath.Join(repo, "myplugin.plugin.zsh")+`"`))
 }
 
 func TestBareCarriageReturnLineEndings(t *testing.T) {
 	home := home(t)
 	p1 := t.TempDir()
 	p2 := t.TempDir()
-	require.NoError(t, os.WriteFile(filepath.Join(p1, "a.plugin.zsh"), []byte(""), 0644))
-	require.NoError(t, os.WriteFile(filepath.Join(p2, "b.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(p1, "a.plugin.zsh"), []byte(""), 0644)))
+	Expect(t, NoError(os.WriteFile(filepath.Join(p2, "b.plugin.zsh"), []byte(""), 0644)))
 
 	sh, err := New(home, bytes.NewBufferString(p1+"\r"+p2+"\r"), 1).Bundle()
-	require.NoError(t, err)
-	require.Contains(t, sh, `source "`+filepath.Join(p1, "a.plugin.zsh")+`"`)
-	require.Contains(t, sh, `source "`+filepath.Join(p2, "b.plugin.zsh")+`"`)
+	Expect(t, NoError(err))
+	Expect(t, Contains(sh, `source "`+filepath.Join(p1, "a.plugin.zsh")+`"`))
+	Expect(t, Contains(sh, `source "`+filepath.Join(p2, "b.plugin.zsh")+`"`))
 }
 
 func TestHome(t *testing.T) {
 	h, err := Home()
-	require.NoError(t, err)
-	require.Contains(t, h, "antibody")
+	Expect(t, NoError(err))
+	Expect(t, Contains(h, "antibody"))
 }
 
 func TestHomeFromEnvironmentVariable(t *testing.T) {
-	require.NoError(t, os.Setenv("ANTIBODY_HOME", "/tmp"))
+	Expect(t, NoError(os.Setenv("ANTIBODY_HOME", "/tmp")))
 	h, err := Home()
-	require.NoError(t, err)
-	require.Equal(t, "/tmp", h)
+	Expect(t, NoError(err))
+	Expect(t, Equals("/tmp", h))
 }
 
 func home(tb testing.TB) string {

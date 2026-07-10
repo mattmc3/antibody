@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mattmc3/antibody/internal/require"
+	. "github.com/mattmc3/antibody/internal/expect"
 )
 
 // Integration tests clone real repos over the network.
@@ -33,9 +33,9 @@ func TestDownloadAllKinds(t *testing.T) {
 	}
 	for _, url := range urls {
 		home := home(t)
-		require.NoError(
+		Expect(
 			t,
-			newGitT(t, home, url).Download(),
+			NoError(newGitT(t, home, url).Download()),
 			"Repo "+url+" failed to download",
 		)
 	}
@@ -47,9 +47,9 @@ func TestDownloadSubmodules(t *testing.T) {
 	var home = home(t)
 	var proj = newGitT(t, home, "ohmyzsh/ohmyzsh branch:master")
 	var module = filepath.Join(proj.Path(), "plugins")
-	require.NoError(t, proj.Download())
-	require.NoError(t, proj.Update())
+	Expect(t, NoError(proj.Download()))
+	Expect(t, NoError(proj.Update()))
 	files, err := os.ReadDir(module)
-	require.NoError(t, err)
-	require.That(t, len(files) > 1)
+	Expect(t, NoError(err))
+	Expect(t, len(files) > 1)
 }

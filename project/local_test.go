@@ -5,40 +5,40 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/mattmc3/antibody/internal/require"
+	. "github.com/mattmc3/antibody/internal/expect"
 )
 
 func TestLocalProject(t *testing.T) {
 	proj, err := NewLocal("/tmp")
-	require.NoError(t, err)
-	require.NoError(t, proj.Download())
-	require.NoError(t, proj.Update())
-	require.Equal(t, "/tmp", proj.Path())
+	Expect(t, NoError(err))
+	Expect(t, NoError(proj.Download()))
+	Expect(t, NoError(proj.Update()))
+	Expect(t, Equals("/tmp", proj.Path()))
 }
 
 func TestLocalProjectRelativeToHome(t *testing.T) {
 	proj, err := NewLocal("~/tmp")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	home, err := os.UserHomeDir()
-	require.NoError(t, err)
-	require.Equal(t, filepath.Join(home, "tmp"), proj.Path())
+	Expect(t, NoError(err))
+	Expect(t, Equals(filepath.Join(home, "tmp"), proj.Path()))
 }
 
 func TestLocalProjectEnvVar(t *testing.T) {
 	// $VAR names are never expanded and never hit the filesystem
 	proj, err := New(t.TempDir(), "$MYPLUGS/myplug")
-	require.NoError(t, err)
-	require.Equal(t, "$MYPLUGS/myplug", proj.Path())
-	require.NoError(t, proj.Download())
-	require.NoError(t, proj.Update())
+	Expect(t, NoError(err))
+	Expect(t, Equals("$MYPLUGS/myplug", proj.Path()))
+	Expect(t, NoError(proj.Download()))
+	Expect(t, NoError(proj.Update()))
 	_, ok := proj.(localProject)
-	require.That(t, ok)
+	Expect(t, ok)
 }
 
 func TestLocalProjectRelativePath(t *testing.T) {
 	proj, err := New(t.TempDir(), "./myplug")
-	require.NoError(t, err)
-	require.Equal(t, "./myplug", proj.Path())
+	Expect(t, NoError(err))
+	Expect(t, Equals("./myplug", proj.Path()))
 	_, ok := proj.(localProject)
-	require.That(t, ok)
+	Expect(t, ok)
 }

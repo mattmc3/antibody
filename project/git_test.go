@@ -9,24 +9,20 @@ import (
 	"testing"
 
 	"github.com/mattmc3/antibody/internal/config"
+	. "github.com/mattmc3/antibody/internal/expect"
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestUpdateNonExistentLocalRepo(t *testing.T) {
 	home := home(t)
 	repo := newGitT(t, home, "zsh-users/zsh-completions")
-	require.Error(t, repo.Update())
+	Expect(t, AnError(repo.Update()))
 }
 
 func TestDownloadFolderNaming(t *testing.T) {
 	home := home(t)
 	repo := newGitT(t, home, "zsh-users/zsh-completions")
-	require.Equal(
-		t,
-		home+"/https-COLON--SLASH--SLASH-github.com-SLASH-zsh-users-SLASH-zsh-completions",
-		repo.Path(),
-	)
+	Expect(t, Equals(home+"/https-COLON--SLASH--SLASH-github.com-SLASH-zsh-users-SLASH-zsh-completions", repo.Path()))
 }
 
 func TestDownloadFolderNamingURLForms(t *testing.T) {
@@ -63,7 +59,7 @@ func TestDownloadFolderNamingURLForms(t *testing.T) {
 	}
 	for _, row := range table {
 		t.Run(row.line, func(t *testing.T) {
-			require.Equal(t, home+"/"+row.folder, newGitT(t, home, row.line).Path())
+			Expect(t, Equals(home+"/"+row.folder, newGitT(t, home, row.line).Path()))
 		})
 	}
 }
@@ -73,38 +69,30 @@ func TestDownloadFolderNamingURLForms(t *testing.T) {
 func useConfig(t *testing.T, toml string) {
 	t.Helper()
 	cfgDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(cfgDir, "antibody"), 0o755))
+	Expect(t, NoError(os.MkdirAll(filepath.Join(cfgDir, "antibody"), 0o755)))
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(cfgDir, "antibody", "antibody.toml"), []byte(toml), 0o644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(cfgDir, "antibody", "antibody.toml"), []byte(toml), 0o644)))
 	// Cleanup registered before Setenv so it runs after the env is
 	// restored, reloading the default config.
 	t.Cleanup(func() {
 		_, err := config.Load()
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 	})
 	t.Setenv("XDG_CONFIG_HOME", cfgDir)
 	_, err := config.Load()
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 }
 
 func TestFolderNamingSSHProtocol(t *testing.T) {
 	useConfig(t, "[git]\nprotocol = \"ssh\"\n")
 	home := home(t)
-	require.Equal(
-		t,
-		home+"/ssh-COLON--SLASH--SLASH-git-AT-github.com-SLASH-foo-SLASH-bar",
-		newGitT(t, home, "foo/bar").Path(),
-	)
+	Expect(t, Equals(home+"/ssh-COLON--SLASH--SLASH-git-AT-github.com-SLASH-foo-SLASH-bar", newGitT(t, home, "foo/bar").Path()))
 }
 
 func TestFolderNamingCustomDomain(t *testing.T) {
 	useConfig(t, "[git]\ndomain = \"gitlab.com\"\n")
 	home := home(t)
-	require.Equal(
-		t,
-		home+"/https-COLON--SLASH--SLASH-gitlab.com-SLASH-foo-SLASH-bar",
-		newGitT(t, home, "foo/bar").Path(),
-	)
+	Expect(t, Equals(home+"/https-COLON--SLASH--SLASH-gitlab.com-SLASH-foo-SLASH-bar", newGitT(t, home, "foo/bar").Path()))
 }
 
 // An unparseable URL must error instead of silently cloning into a
@@ -112,20 +100,20 @@ func TestFolderNamingCustomDomain(t *testing.T) {
 func TestFolderNamingUnparseableURL(t *testing.T) {
 	home := home(t)
 	_, err := New(home, "https://github.com/%zz")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "%zz")
+	Expect(t, AnError(err))
+	Expect(t, Contains(err.Error(), "%zz"))
 }
 
 func TestSubFolder(t *testing.T) {
 	home := home(t)
 	repo := newGitT(t, home, "ohmyzsh/ohmyzsh path:plugins/aws")
-	require.That(t, strings.HasSuffix(repo.Path(), "plugins/aws"))
+	Expect(t, strings.HasSuffix(repo.Path(), "plugins/aws"))
 }
 
 func TestPath(t *testing.T) {
 	home := home(t)
 	repo := newGitT(t, home, "docker/cli path:contrib/completion/zsh/_docker")
-	require.That(t, strings.HasSuffix(repo.Path(), "contrib/completion/zsh/_docker"))
+	Expect(t, strings.HasSuffix(repo.Path(), "contrib/completion/zsh/_docker"))
 }
 
 func TestDownloadPinnedRepo(t *testing.T) {
@@ -133,19 +121,19 @@ func TestDownloadPinnedRepo(t *testing.T) {
 	sha := upstream.HEAD()
 	home := home(t)
 	repo := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
-	require.Contains(t, repo.Path(), "-SLASH-tree-SLASH-"+sha[:7])
-	require.NotContains(t, repo.Path(), sha[7:])
-	require.NotContains(t, repo.Path(), "/tree/")
+	Expect(t, Contains(repo.Path(), "-SLASH-tree-SLASH-"+sha[:7]))
+	Expect(t, Not(Contains(repo.Path(), sha[7:])))
+	Expect(t, Not(Contains(repo.Path(), "/tree/")))
 	if err := repo.Download(); err != nil {
 		t.Fatalf("repo.Download failed: %#v", err)
 	}
 
 	cmd := exec.Command("git", "-C", repo.Path(), "rev-parse", "HEAD")
 	out, err := cmd.Output()
-	require.NoError(t, err)
-	require.Equal(t, sha, strings.TrimSpace(string(out)))
+	Expect(t, NoError(err))
+	Expect(t, Equals(sha, strings.TrimSpace(string(out))))
 
-	require.NoError(t, Update(home, 1))
+	Expect(t, NoError(Update(home, 1)))
 }
 
 func TestDownloadAnotherBranch(t *testing.T) {
@@ -156,10 +144,10 @@ func TestDownloadAnotherBranch(t *testing.T) {
 	upstream.Checkout("main")
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL()+" branch:v1")
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	cloneSHA, err := commit(repo.Path())
-	require.NoError(t, err)
-	require.That(t, strings.HasPrefix(branchSHA, cloneSHA))
+	Expect(t, NoError(err))
+	Expect(t, strings.HasPrefix(branchSHA, cloneSHA))
 }
 
 func TestUpdateAnotherBranch(t *testing.T) {
@@ -170,31 +158,31 @@ func TestUpdateAnotherBranch(t *testing.T) {
 	upstream.Checkout("main")
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL()+" branch:v1")
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	folders, err := List(home)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(folders))
-	require.NoError(t, NewClonedGit(home, folders[0]).Update())
+	Expect(t, NoError(err))
+	Expect(t, Equals(1, len(folders)))
+	Expect(t, NoError(NewClonedGit(home, folders[0]).Update()))
 }
 
 func TestUpdateExistentLocalRepo(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL())
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	folders, err := List(home)
-	require.NoError(t, err)
-	require.Equal(t, 1, len(folders))
-	require.NoError(t, NewClonedGit(home, folders[0]).Update())
+	Expect(t, NoError(err))
+	Expect(t, Equals(1, len(folders)))
+	Expect(t, NoError(NewClonedGit(home, folders[0]).Update()))
 }
 
 func TestDownloadMultipleTimes(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL())
-	require.NoError(t, repo.Download())
-	require.NoError(t, repo.Download())
-	require.NoError(t, repo.Update())
+	Expect(t, NoError(repo.Download()))
+	Expect(t, NoError(repo.Download()))
+	Expect(t, NoError(repo.Update()))
 }
 
 func TestMultipleSubFolders(t *testing.T) {
@@ -207,7 +195,7 @@ func TestMultipleSubFolders(t *testing.T) {
 		upstream.URL() + " path:plugins/aws",
 		upstream.URL() + " path:plugins/battery",
 	} {
-		require.NoError(t, newGitT(t, home, line).Download())
+		Expect(t, NoError(newGitT(t, home, line).Download()))
 	}
 }
 
@@ -215,13 +203,13 @@ func TestUpdatePullsUpstreamCommit(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL())
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	upstream.WriteFile("new.txt", "new\n")
 	newSHA := upstream.Commit("upstream work")
-	require.NoError(t, repo.Update())
+	Expect(t, NoError(repo.Update()))
 	cloneSHA, err := commit(repo.Path())
-	require.NoError(t, err)
-	require.That(t, strings.HasPrefix(newSHA, cloneSHA))
+	Expect(t, NoError(err))
+	Expect(t, strings.HasPrefix(newSHA, cloneSHA))
 }
 
 func TestUpdateSkipsPinnedRepo(t *testing.T) {
@@ -229,13 +217,13 @@ func TestUpdateSkipsPinnedRepo(t *testing.T) {
 	sha := upstream.HEAD()
 	home := home(t)
 	repo := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	upstream.WriteFile("new.txt", "new\n")
 	upstream.Commit("upstream work")
-	require.NoError(t, Update(home, 1))
+	Expect(t, NoError(Update(home, 1)))
 	cloneSHA, err := commit(repo.Path())
-	require.NoError(t, err)
-	require.That(t, strings.HasPrefix(sha, cloneSHA))
+	Expect(t, NoError(err))
+	Expect(t, strings.HasPrefix(sha, cloneSHA))
 }
 
 func TestDownloadPinnedToOlderCommit(t *testing.T) {
@@ -246,10 +234,10 @@ func TestDownloadPinnedToOlderCommit(t *testing.T) {
 	upstream.Commit("newer work")
 	home := home(t)
 	repo := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), oldSHA))
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	cloneSHA, err := commit(repo.Path())
-	require.NoError(t, err)
-	require.That(t, strings.HasPrefix(oldSHA, cloneSHA))
+	Expect(t, NoError(err))
+	Expect(t, strings.HasPrefix(oldSHA, cloneSHA))
 }
 
 func TestDownloadBranchTag(t *testing.T) {
@@ -260,10 +248,10 @@ func TestDownloadBranchTag(t *testing.T) {
 	upstream.Commit("after tag")
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL()+" branch:v1.0.0")
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	cloneSHA, err := commit(repo.Path())
-	require.NoError(t, err)
-	require.That(t, strings.HasPrefix(tagSHA, cloneSHA))
+	Expect(t, NoError(err))
+	Expect(t, strings.HasPrefix(tagSHA, cloneSHA))
 }
 
 func TestDownloadAdvancePin(t *testing.T) {
@@ -275,17 +263,17 @@ func TestDownloadAdvancePin(t *testing.T) {
 	home := home(t)
 
 	oldPin := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), oldSHA))
-	require.NoError(t, oldPin.Download())
+	Expect(t, NoError(oldPin.Download()))
 	newPin := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), newSHA))
-	require.NoError(t, newPin.Download())
+	Expect(t, NoError(newPin.Download()))
 
-	require.That(t, oldPin.Path() != newPin.Path(), "pins should clone to distinct dirs: %s", oldPin.Path())
+	Expect(t, oldPin.Path() != newPin.Path(), "pins should clone to distinct dirs: %s", oldPin.Path())
 	for repo, sha := range map[Project]string{oldPin: oldSHA, newPin: newSHA} {
 		cloneSHA, err := commit(repo.Path())
-		require.NoError(t, err)
-		require.That(t, strings.HasPrefix(sha, cloneSHA))
+		Expect(t, NoError(err))
+		Expect(t, strings.HasPrefix(sha, cloneSHA))
 	}
-	require.NoError(t, Update(home, 1))
+	Expect(t, NoError(Update(home, 1)))
 }
 
 // A leftover antibody.pin config from older versions must not block
@@ -294,16 +282,16 @@ func TestUpdateIgnoresStalePinConfig(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL())
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	cmd := exec.Command("git", "-C", repo.Path(), "config", "antibody.pin", upstream.HEAD())
-	require.NoError(t, cmd.Run())
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(cmd.Run()))
+	Expect(t, NoError(repo.Download()))
 	upstream.WriteFile("new.txt", "new\n")
 	newSHA := upstream.Commit("upstream work")
-	require.NoError(t, Update(home, 1))
+	Expect(t, NoError(Update(home, 1)))
 	cloneSHA, err := commit(repo.Path())
-	require.NoError(t, err)
-	require.That(t, strings.HasPrefix(newSHA, cloneSHA))
+	Expect(t, NoError(err))
+	Expect(t, strings.HasPrefix(newSHA, cloneSHA))
 }
 
 // Characterizes current behavior: an existing clone is never re-cloned or
@@ -316,12 +304,12 @@ func TestDownloadExistingCloneIgnoresBranchChange(t *testing.T) {
 	upstream.Commit("v1 work")
 	upstream.Checkout("main")
 	home := home(t)
-	require.NoError(t, newGitT(t, home, upstream.URL()).Download())
+	Expect(t, NoError(newGitT(t, home, upstream.URL()).Download()))
 	repo := newGitT(t, home, upstream.URL()+" branch:v1")
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	cloneSHA, err := commit(repo.Path())
-	require.NoError(t, err)
-	require.That(t, strings.HasPrefix(mainSHA, cloneSHA))
+	Expect(t, NoError(err))
+	Expect(t, strings.HasPrefix(mainSHA, cloneSHA))
 }
 
 // Characterizes a latent shallow-clone bug: after an upstream history
@@ -330,23 +318,23 @@ func TestUpdateAfterUpstreamRewriteFails(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL())
-	require.NoError(t, repo.Download())
+	Expect(t, NoError(repo.Download()))
 	upstream.WriteFile("new.txt", "new\n")
 	upstream.Amend("rewritten history")
-	require.Error(t, repo.Update())
+	Expect(t, AnError(repo.Update()))
 }
 
 func TestDownloadNonExistentRepo(t *testing.T) {
 	home := home(t)
 	repo := newGitT(t, home, "file:///this/path/does/not/exist")
-	require.Error(t, repo.Download())
+	Expect(t, AnError(repo.Download()))
 }
 
 func TestDownloadNonExistentBranch(t *testing.T) {
 	upstream := gittest.New(t)
 	home := home(t)
 	repo := newGitT(t, home, upstream.URL()+" branch:also-nope")
-	require.Error(t, repo.Download())
+	Expect(t, AnError(repo.Download()))
 }
 
 func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
@@ -354,9 +342,9 @@ func TestDownloadPinnedRepoInvalidPinCleansUp(t *testing.T) {
 	home := home(t)
 	sha := "lmnop"
 	repo := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
-	require.Error(t, repo.Download())
+	Expect(t, AnError(repo.Download()))
 	_, statErr := os.Stat(repo.Path())
-	require.That(t, os.IsNotExist(statErr), "clone dir should not exist: %s", repo.Path())
+	Expect(t, os.IsNotExist(statErr), "clone dir should not exist: %s", repo.Path())
 }
 
 // Existing clones must load without spawning git at all; bundle runs on
@@ -366,13 +354,13 @@ func TestDownloadExistingCloneNeedsNoGit(t *testing.T) {
 	sha := upstream.HEAD()
 	home := home(t)
 	pinned := newGitT(t, home, fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
-	require.NoError(t, pinned.Download())
+	Expect(t, NoError(pinned.Download()))
 	plain := newGitT(t, home, upstream.URL())
-	require.NoError(t, plain.Download())
+	Expect(t, NoError(plain.Download()))
 
 	t.Setenv("PATH", "")
-	require.NoError(t, plain.Download())
-	require.NoError(t, pinned.Download())
+	Expect(t, NoError(plain.Download()))
+	Expect(t, NoError(pinned.Download()))
 }
 
 func BenchmarkDownloadExistingClone(b *testing.B) {
@@ -408,7 +396,7 @@ func BenchmarkDownloadExistingPinnedClone(b *testing.B) {
 func newGitT(tb testing.TB, home, line string) Project {
 	tb.Helper()
 	proj, err := New(home, line)
-	require.NoError(tb, err)
+	Expect(tb, NoError(err))
 	return proj
 }
 

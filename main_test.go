@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	. "github.com/mattmc3/antibody/internal/expect"
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/mattmc3/antibody/internal/require"
 )
 
 // nolint: gochecknoglobals
@@ -58,7 +58,7 @@ func runCLI(t *testing.T, home, stdin string, args ...string) cliResult {
 	code := 0
 	if err != nil {
 		exitErr, ok := err.(*exec.ExitError)
-		require.That(t, ok, "antibody did not run: %v", err)
+		Expect(t, ok, "antibody did not run: %v", err)
 		code = exitErr.ExitCode()
 	}
 	return cliResult{stdout: out.String(), stderr: errb.String(), exitCode: code}
@@ -75,10 +75,10 @@ func pluginFixture(t *testing.T) *gittest.Repo {
 func TestCLIBundleArg(t *testing.T) {
 	upstream := pluginFixture(t)
 	res := runCLI(t, t.TempDir(), "", "bundle", upstream.URL())
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Contains(t, res.stdout, "fpath+=( ")
-	require.Contains(t, res.stdout, "source ")
-	require.Contains(t, res.stdout, "myplugin.plugin.zsh")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, "fpath+=( "))
+	Expect(t, Contains(res.stdout, "source "))
+	Expect(t, Contains(res.stdout, "myplugin.plugin.zsh"))
 }
 
 func TestCLIBundleStdin(t *testing.T) {
@@ -86,84 +86,84 @@ func TestCLIBundleStdin(t *testing.T) {
 	b := pluginFixture(t)
 	input := a.URL() + "\n" + b.URL() + " kind:path\n"
 	res := runCLI(t, t.TempDir(), input, "bundle")
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Contains(t, res.stdout, "source ")
-	require.Contains(t, res.stdout, `export PATH="`)
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, "source "))
+	Expect(t, Contains(res.stdout, `export PATH="`))
 }
 
 func TestCLIBundleError(t *testing.T) {
 	res := runCLI(t, t.TempDir(), "", "bundle", "file:///this/path/does/not/exist")
-	require.That(t, res.exitCode != 0, "expected failure exit code")
-	require.Contains(t, res.stderr, "antibody: error: failed to bundle")
+	Expect(t, res.exitCode != 0, "expected failure exit code")
+	Expect(t, Contains(res.stderr, "antibody: error: failed to bundle"))
 }
 
 func TestCLIHome(t *testing.T) {
 	home := t.TempDir()
 	res := runCLI(t, home, "", "home")
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Equal(t, home+"\n", res.stdout)
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Equals(home+"\n", res.stdout))
 }
 
 func TestCLIListAndPath(t *testing.T) {
 	upstream := pluginFixture(t)
 	home := t.TempDir()
-	require.Equal(t, 0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode)
+	Expect(t, Equals(0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode))
 
 	list := runCLI(t, home, "", "list")
-	require.Equal(t, 0, list.exitCode, list.stderr)
-	require.Contains(t, list.stdout, upstream.URL())
-	require.Contains(t, list.stdout, home)
+	Expect(t, Equals(0, list.exitCode), list.stderr)
+	Expect(t, Contains(list.stdout, upstream.URL()))
+	Expect(t, Contains(list.stdout, home))
 
 	path := runCLI(t, home, "", "path", upstream.URL())
-	require.Equal(t, 0, path.exitCode, path.stderr)
-	require.Contains(t, path.stdout, home)
+	Expect(t, Equals(0, path.exitCode), path.stderr)
+	Expect(t, Contains(path.stdout, home))
 
 	missing := runCLI(t, home, "", "path", "not/cloned")
-	require.That(t, missing.exitCode != 0, "expected failure exit code")
-	require.Contains(t, missing.stderr, "does not exist in cloned paths")
+	Expect(t, missing.exitCode != 0, "expected failure exit code")
+	Expect(t, Contains(missing.stderr, "does not exist in cloned paths"))
 }
 
 func TestCLIPurge(t *testing.T) {
 	upstream := pluginFixture(t)
 	home := t.TempDir()
-	require.Equal(t, 0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode)
+	Expect(t, Equals(0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode))
 
 	purge := runCLI(t, home, "", "purge", upstream.URL())
-	require.Equal(t, 0, purge.exitCode, purge.stderr)
-	require.Contains(t, purge.stdout, "removed!")
+	Expect(t, Equals(0, purge.exitCode), purge.stderr)
+	Expect(t, Contains(purge.stdout, "removed!"))
 
 	entries, err := os.ReadDir(home)
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	for _, e := range entries {
-		require.NotContains(t, e.Name(), "-SLASH-", "clone left behind: %s", e.Name())
+		Expect(t, Not(Contains(e.Name(), "-SLASH-")), "clone left behind: %s", e.Name())
 	}
 
 	again := runCLI(t, home, "", "purge", upstream.URL())
-	require.That(t, again.exitCode != 0, "expected failure exit code")
-	require.Contains(t, again.stderr, "does not exist")
+	Expect(t, again.exitCode != 0, "expected failure exit code")
+	Expect(t, Contains(again.stderr, "does not exist"))
 }
 
 func TestCLIUpdate(t *testing.T) {
 	upstream := pluginFixture(t)
 	home := t.TempDir()
-	require.Equal(t, 0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode)
+	Expect(t, Equals(0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode))
 
 	res := runCLI(t, home, "", "update")
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Contains(t, res.stdout, "Updating all bundles in "+home)
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, "Updating all bundles in "+home))
 }
 
 func TestCLIInit(t *testing.T) {
 	res := runCLI(t, t.TempDir(), "", "init")
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Contains(t, res.stdout, "antibody")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, "antibody"))
 }
 
 func TestCLIVersion(t *testing.T) {
 	for _, flag := range []string{"--version", "-v"} {
 		res := runCLI(t, t.TempDir(), "", flag)
-		require.Equal(t, 0, res.exitCode)
-		require.Contains(t, res.stdout+res.stderr, "antibody version")
+		Expect(t, Equals(0, res.exitCode))
+		Expect(t, Contains(res.stdout+res.stderr, "antibody version"))
 	}
 }
 
@@ -171,60 +171,60 @@ func TestCLIHelp(t *testing.T) {
 	// no args prints usage too
 	for _, args := range [][]string{{"-h"}, {"--help"}, {"help"}, {}} {
 		res := runCLI(t, t.TempDir(), "", args...)
-		require.Equal(t, 0, res.exitCode, res.stderr)
+		Expect(t, Equals(0, res.exitCode), res.stderr)
 		out := res.stdout + res.stderr
-		require.Contains(t, out, "Commands:")
-		require.Contains(t, out, "bundle")
+		Expect(t, Contains(out, "Commands:"))
+		Expect(t, Contains(out, "bundle"))
 	}
 }
 
 func TestCLIHelpCommand(t *testing.T) {
 	res := runCLI(t, t.TempDir(), "", "help", "purge")
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Contains(t, res.stdout+res.stderr, "purge")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout+res.stderr, "purge"))
 
 	// ls resolves to list help
 	res = runCLI(t, t.TempDir(), "", "help", "ls")
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Contains(t, res.stdout, "antibody list")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, "antibody list"))
 
 	// -h works after a subcommand and shows that command's help
 	res = runCLI(t, t.TempDir(), "", "bundle", "-h")
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Contains(t, res.stdout, "antibody bundle")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, "antibody bundle"))
 }
 
 func TestCLIListVariants(t *testing.T) {
 	upstream := pluginFixture(t)
 	home := t.TempDir()
-	require.Equal(t, 0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode)
+	Expect(t, Equals(0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode))
 
 	list := runCLI(t, home, "", "list")
 	ls := runCLI(t, home, "", "ls")
-	require.Equal(t, 0, ls.exitCode, ls.stderr)
-	require.Equal(t, list.stdout, ls.stdout)
+	Expect(t, Equals(0, ls.exitCode), ls.stderr)
+	Expect(t, Equals(list.stdout, ls.stdout))
 
 	dirs := runCLI(t, home, "", "list", "-d")
-	require.Equal(t, 0, dirs.exitCode, dirs.stderr)
-	require.Contains(t, dirs.stdout, home)
-	require.NotContains(t, dirs.stdout, upstream.URL())
+	Expect(t, Equals(0, dirs.exitCode), dirs.stderr)
+	Expect(t, Contains(dirs.stdout, home))
+	Expect(t, Not(Contains(dirs.stdout, upstream.URL())))
 
 	urls := runCLI(t, home, "", "list", "--url")
-	require.Equal(t, 0, urls.exitCode, urls.stderr)
-	require.Contains(t, urls.stdout, upstream.URL())
-	require.NotContains(t, urls.stdout, home)
+	Expect(t, Equals(0, urls.exitCode), urls.stderr)
+	Expect(t, Contains(urls.stdout, upstream.URL()))
+	Expect(t, Not(Contains(urls.stdout, home)))
 }
 
 func TestCLIParallelismFlagPosition(t *testing.T) {
 	home := t.TempDir()
 	// global flag works before and after the subcommand
 	before := runCLI(t, home, "", "-p", "2", "home")
-	require.Equal(t, 0, before.exitCode, before.stderr)
-	require.Equal(t, home+"\n", before.stdout)
+	Expect(t, Equals(0, before.exitCode), before.stderr)
+	Expect(t, Equals(home+"\n", before.stdout))
 
 	after := runCLI(t, home, "", "home", "-p", "2")
-	require.Equal(t, 0, after.exitCode, after.stderr)
-	require.Equal(t, home+"\n", after.stdout)
+	Expect(t, Equals(0, after.exitCode), after.stderr)
+	Expect(t, Equals(home+"\n", after.stdout))
 }
 
 func TestCLIUsageErrors(t *testing.T) {
@@ -236,17 +236,17 @@ func TestCLIUsageErrors(t *testing.T) {
 	}
 	for name, args := range cases {
 		res := runCLI(t, t.TempDir(), "", args...)
-		require.That(t, res.exitCode != 0, name)
-		require.Contains(t, res.stderr, "antibody: error:", name)
+		Expect(t, res.exitCode != 0, name)
+		Expect(t, Contains(res.stderr, "antibody: error:"), name)
 	}
 }
 
 func TestCLICompletions(t *testing.T) {
 	res := runCLI(t, t.TempDir(), "", "completions", "zsh")
-	require.Equal(t, 0, res.exitCode, res.stderr)
-	require.Contains(t, res.stdout, "#compdef antibody")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, "#compdef antibody"))
 
 	bad := runCLI(t, t.TempDir(), "", "completions", "fish")
-	require.That(t, bad.exitCode != 0, "expected failure exit code")
-	require.Contains(t, bad.stderr, "antibody: error:")
+	Expect(t, bad.exitCode != 0, "expected failure exit code")
+	Expect(t, Contains(bad.stderr, "antibody: error:"))
 }

@@ -3,7 +3,7 @@ package antibodylib
 import (
 	"testing"
 
-	"github.com/mattmc3/antibody/internal/require"
+	. "github.com/mattmc3/antibody/internal/expect"
 )
 
 // Output lines must come back in input order regardless of the order
@@ -14,10 +14,10 @@ func TestIndexedLinesOrder(t *testing.T) {
 	s.Append(indexedLine{idx: 2, line: "third"})
 	s.Append(indexedLine{idx: -1, line: "first"})
 	s.Append(indexedLine{idx: 0, line: "second"})
-	require.Equal(t, "first\nsecond\nthird", s.Items().String())
+	Expect(t, Equals("first\nsecond\nthird", s.Items().String()))
 }
 
 func TestIndexedLinesEmpty(t *testing.T) {
 	var s safeIndexedLines
-	require.Equal(t, "", s.Items().String())
+	Expect(t, Equals("", s.Items().String()))
 }

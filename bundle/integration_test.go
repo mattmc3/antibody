@@ -3,7 +3,7 @@ package bundle
 import (
 	"testing"
 
-	"github.com/mattmc3/antibody/internal/require"
+	. "github.com/mattmc3/antibody/internal/expect"
 )
 
 // Integration tests clone real repos over the network.
@@ -20,7 +20,7 @@ func TestZshBundleWithNoShFiles(t *testing.T) {
 	skipShort(t)
 	home := home(t)
 	bundle, err := New(home, "mattmc3/antibody")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	_, err = bundle.Get()
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 }

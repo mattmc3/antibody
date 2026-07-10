@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/getantidote/bundleparse"
+	. "github.com/mattmc3/antibody/internal/expect"
 	"github.com/mattmc3/antibody/internal/gittest"
-	"github.com/mattmc3/antibody/internal/require"
 )
 
 func TestSuccessfullGitBundles(t *testing.T) {
@@ -52,10 +52,10 @@ func TestSuccessfullGitBundles(t *testing.T) {
 			}
 			home := home(t)
 			bundle, err := New(home, upstream.URL()+row.args)
-			require.NoError(t, err)
+			Expect(t, NoError(err))
 			result, err := bundle.Get()
-			require.NoError(t, err)
-			require.Contains(t, result, row.result)
+			Expect(t, NoError(err))
+			Expect(t, Contains(result, row.result))
 		})
 	}
 }
@@ -63,9 +63,9 @@ func TestSuccessfullGitBundles(t *testing.T) {
 func TestZshInvalidGitBundle(t *testing.T) {
 	home := home(t)
 	bundle, err := New(home, "file:///this/path/does/not/exist")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	_, err = bundle.Get()
-	require.Error(t, err)
+	Expect(t, AnError(err))
 }
 
 // A failed clone must propagate through every bundle kind and wrapper.
@@ -80,9 +80,9 @@ func TestInvalidGitBundleAllKinds(t *testing.T) {
 	} {
 		t.Run(args, func(t *testing.T) {
 			b, err := New(home(t), "file:///this/path/does/not/exist "+args)
-			require.NoError(t, err)
+			Expect(t, NoError(err))
 			_, err = b.Get()
-			require.Error(t, err)
+			Expect(t, AnError(err))
 		})
 	}
 }
@@ -90,70 +90,70 @@ func TestInvalidGitBundleAllKinds(t *testing.T) {
 func TestZshLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(home+"/a.sh", []byte("echo 9"), 0644))
+	Expect(t, NoError(os.WriteFile(home+"/a.sh", []byte("echo 9"), 0644)))
 	bundle, err := New(home, home)
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := bundle.Get()
-	require.Contains(t, result, "a.sh")
-	require.NoError(t, err)
+	Expect(t, Contains(result, "a.sh"))
+	Expect(t, NoError(err))
 }
 
 func TestZshInvalidLocalBundle(t *testing.T) {
 	home := home(t)
 	bundle, err := New(home, "/asduhasd/asdasda")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	_, err = bundle.Get()
-	require.Error(t, err)
+	Expect(t, AnError(err))
 }
 
 func TestPathInvalidLocalBundle(t *testing.T) {
 	home := home(t)
 	bundle, err := New(home, "/asduhasd/asdasda kind:path")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	_, err = bundle.Get()
-	require.Error(t, err)
+	Expect(t, AnError(err))
 }
 
 func TestPathLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "whatever.sh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "whatever.sh"), []byte(""), 0644)))
 	bundle, err := New(home, home+" kind:path")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := bundle.Get()
-	require.NoError(t, err)
-	require.Equal(t, "export PATH=\""+home+":$PATH\"", result)
-	require.NoError(t, err)
+	Expect(t, NoError(err))
+	Expect(t, Equals("export PATH=\""+home+":$PATH\"", result))
+	Expect(t, NoError(err))
 }
 
 func TestDecoratedLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644)))
 
 	t.Run("pre", func(t *testing.T) {
 		b, err := New(home, home+" pre:my_pre_cmd")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.That(t, strings.HasPrefix(result, "my_pre_cmd\n"))
+		Expect(t, NoError(err))
+		Expect(t, strings.HasPrefix(result, "my_pre_cmd\n"))
 	})
 
 	t.Run("post", func(t *testing.T) {
 		b, err := New(home, home+" post:my_post_cmd")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.That(t, strings.HasSuffix(result, "\nmy_post_cmd"))
+		Expect(t, NoError(err))
+		Expect(t, strings.HasSuffix(result, "\nmy_post_cmd"))
 	})
 
 	t.Run("conditional", func(t *testing.T) {
 		b, err := New(home, home+" conditional:is_mac")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.That(t, strings.HasPrefix(result, "if is_mac; then\n"))
-		require.That(t, strings.HasSuffix(result, "\nfi"))
+		Expect(t, NoError(err))
+		Expect(t, strings.HasPrefix(result, "if is_mac; then\n"))
+		Expect(t, strings.HasSuffix(result, "\nfi"))
 	})
 }
 
@@ -163,106 +163,106 @@ func TestPathsWithSpaces(t *testing.T) {
 	upstream.WriteFile("myplugin.plugin.zsh", "echo myplugin\n")
 	upstream.Commit("add plugin file")
 	spacedHome := filepath.Join(t.TempDir(), "antibody with spaces")
-	require.NoError(t, os.MkdirAll(spacedHome, 0755))
+	Expect(t, NoError(os.MkdirAll(spacedHome, 0755)))
 
 	t.Run("zsh", func(t *testing.T) {
 		b, err := New(spacedHome, upstream.URL())
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		lines := strings.Split(result, "\n")
-		require.Equal(t, 2, len(lines))
-		require.Match(t, `^fpath\+=\( ".* with spaces.*" \)$`, lines[0])
-		require.Match(t, `^source ".* with spaces.*/myplugin\.plugin\.zsh"$`, lines[1])
+		Expect(t, Equals(2, len(lines)))
+		Expect(t, Matches(`^fpath\+=\( ".* with spaces.*" \)$`, lines[0]))
+		Expect(t, Matches(`^source ".* with spaces.*/myplugin\.plugin\.zsh"$`, lines[1]))
 	})
 
 	t.Run("fpath", func(t *testing.T) {
 		b, err := New(spacedHome, upstream.URL()+" kind:fpath")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.Match(t, `^fpath\+=\( ".* with spaces.*" \)$`, result)
+		Expect(t, NoError(err))
+		Expect(t, Matches(`^fpath\+=\( ".* with spaces.*" \)$`, result))
 	})
 
 	t.Run("defer", func(t *testing.T) {
 		b, err := New(spacedHome, upstream.URL()+" kind:defer")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.Match(t, `zsh-defer source ".* with spaces.*/myplugin\.plugin\.zsh"`, result)
+		Expect(t, NoError(err))
+		Expect(t, Matches(`zsh-defer source ".* with spaces.*/myplugin\.plugin\.zsh"`, result))
 	})
 }
 
 func TestQuotedAnnotationValues(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644)))
 
 	t.Run("double quotes", func(t *testing.T) {
 		b, err := New(home, home+` pre:"echo hello world"`)
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.That(t, strings.HasPrefix(result, "echo hello world\n"), "got: %s", result)
+		Expect(t, NoError(err))
+		Expect(t, strings.HasPrefix(result, "echo hello world\n"), "got: %s", result)
 	})
 
 	t.Run("single quotes", func(t *testing.T) {
 		b, err := New(home, home+" post:'echo bye bye'")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.That(t, strings.HasSuffix(result, "\necho bye bye"), "got: %s", result)
+		Expect(t, NoError(err))
+		Expect(t, strings.HasSuffix(result, "\necho bye bye"), "got: %s", result)
 	})
 }
 
 func TestFpathRuleAnnotation(t *testing.T) {
 	home := home(t)
 	b, err := New(home, home+" kind:fpath fpath-rule:prepend")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "_func"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "_func"), []byte(""), 0644)))
 	result, err := b.Get()
-	require.NoError(t, err)
-	require.That(t, strings.HasPrefix(result, "fpath=( "), "got: %s", result)
+	Expect(t, NoError(err))
+	Expect(t, strings.HasPrefix(result, "fpath=( "), "got: %s", result)
 }
 
 func TestAutoloadLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "_myfunc"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "_myfunc"), []byte(""), 0644)))
 	bundle, err := New(home, home+" kind:autoload")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := bundle.Get()
-	require.NoError(t, err)
-	require.Contains(t, result, "fpath+=( ")
-	require.Contains(t, result, "builtin autoload -Uz $fpath[-1]/*(N.:t)")
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, "fpath+=( "))
+	Expect(t, Contains(result, "builtin autoload -Uz $fpath[-1]/*(N.:t)"))
 }
 
 func TestAutoloadAnnotationLocalBundle(t *testing.T) {
 	home := home(t)
-	require.NoError(t, os.MkdirAll(filepath.Join(home, "functions"), 0755))
+	Expect(t, NoError(os.MkdirAll(filepath.Join(home, "functions"), 0755)))
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "myplugin.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "myplugin.plugin.zsh"), []byte(""), 0644)))
 	bundle, err := New(home, home+" autoload:functions")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := bundle.Get()
-	require.NoError(t, err)
-	require.Contains(t, result, "builtin autoload -Uz $fpath[-1]/*(N.:t)")
-	require.Contains(t, result, "source ")
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, "builtin autoload -Uz $fpath[-1]/*(N.:t)"))
+	Expect(t, Contains(result, "source "))
 }
 
 func TestDeferLocalBundle(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "myplugin.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "myplugin.plugin.zsh"), []byte(""), 0644)))
 	bundle, err := New(home, home+" kind:defer")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := bundle.Get()
-	require.NoError(t, err)
-	require.Contains(t, result, "zsh-defer source ")
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, "zsh-defer source "))
 	for line := range strings.SplitSeq(result, "\n") {
 		if strings.HasPrefix(line, "fpath") {
-			require.That(t, !strings.HasPrefix(line, "zsh-defer"), "fpath line should not be deferred: %q", line)
+			Expect(t, !strings.HasPrefix(line, "zsh-defer"), "fpath line should not be deferred: %q", line)
 		}
 	}
 }
@@ -270,141 +270,141 @@ func TestDeferLocalBundle(t *testing.T) {
 func TestFpathBeforeSource(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644)))
 	b, err := New(home, home)
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := b.Get()
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	lines := strings.Split(result, "\n")
-	require.That(t, strings.HasPrefix(lines[0], "fpath+=( "), "want fpath line first, got: %s", result)
-	require.That(t, strings.HasPrefix(lines[1], "source "), "want source line second, got: %s", result)
+	Expect(t, strings.HasPrefix(lines[0], "fpath+=( "), "want fpath line first, got: %s", result)
+	Expect(t, strings.HasPrefix(lines[1], "source "), "want source line second, got: %s", result)
 }
 
 func TestEnvVarLocalBundle(t *testing.T) {
 	t.Run("dir", func(t *testing.T) {
 		// var need not be set: emitted literally, init file assumed
 		b, err := New(home(t), "$MYPLUGS/myplug")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.Equal(t, `fpath+=( "$MYPLUGS/myplug" )`+"\n"+`source "$MYPLUGS/myplug/myplug.plugin.zsh"`, result)
+		Expect(t, NoError(err))
+		Expect(t, Equals(`fpath+=( "$MYPLUGS/myplug" )`+"\n"+`source "$MYPLUGS/myplug/myplug.plugin.zsh"`, result))
 	})
 
 	t.Run("path", func(t *testing.T) {
 		b, err := New(home(t), "$MYPLUGS/myplug kind:path")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.Equal(t, `export PATH="$MYPLUGS/myplug:$PATH"`, result)
+		Expect(t, NoError(err))
+		Expect(t, Equals(`export PATH="$MYPLUGS/myplug:$PATH"`, result))
 	})
 
 	t.Run("file", func(t *testing.T) {
 		plugins := t.TempDir()
 		t.Setenv("MYPLUGS", plugins)
 		// nolint: gosec
-		require.NoError(t, os.WriteFile(filepath.Join(plugins, "single.zsh"), []byte(""), 0644))
+		Expect(t, NoError(os.WriteFile(filepath.Join(plugins, "single.zsh"), []byte(""), 0644)))
 		b, err := New(home(t), "$MYPLUGS/single.zsh")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.Equal(t, `source "$MYPLUGS/single.zsh"`, result)
+		Expect(t, NoError(err))
+		Expect(t, Equals(`source "$MYPLUGS/single.zsh"`, result))
 	})
 
 	t.Run("no expansion or globbing", func(t *testing.T) {
 		plugins := t.TempDir()
 		t.Setenv("MYPLUGS", plugins)
 		dir := filepath.Join(plugins, "oddplug")
-		require.NoError(t, os.MkdirAll(dir, 0755))
+		Expect(t, NoError(os.MkdirAll(dir, 0755)))
 		// nolint: gosec
-		require.NoError(t, os.WriteFile(filepath.Join(dir, "other.plugin.zsh"), []byte(""), 0644))
+		Expect(t, NoError(os.WriteFile(filepath.Join(dir, "other.plugin.zsh"), []byte(""), 0644)))
 		b, err := New(home(t), "$MYPLUGS/oddplug")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.Equal(t, `fpath+=( "$MYPLUGS/oddplug" )`+"\n"+`source "$MYPLUGS/oddplug/oddplug.plugin.zsh"`, result)
+		Expect(t, NoError(err))
+		Expect(t, Equals(`fpath+=( "$MYPLUGS/oddplug" )`+"\n"+`source "$MYPLUGS/oddplug/oddplug.plugin.zsh"`, result))
 	})
 }
 
 func TestRelativeLocalBundle(t *testing.T) {
 	base := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(base, "myplug"), 0755))
+	Expect(t, NoError(os.MkdirAll(filepath.Join(base, "myplug"), 0755)))
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(base, "myplug", "myplug.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(base, "myplug", "myplug.plugin.zsh"), []byte(""), 0644)))
 	t.Chdir(base)
 
 	b, err := New(home(t), "./myplug")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := b.Get()
-	require.NoError(t, err)
-	require.Contains(t, result, `fpath+=( "./myplug" )`)
-	require.Contains(t, result, `source "./myplug/myplug.plugin.zsh"`)
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, `fpath+=( "./myplug" )`))
+	Expect(t, Contains(result, `source "./myplug/myplug.plugin.zsh"`))
 }
 
 func TestHomeSubstitution(t *testing.T) {
 	fakeHome := t.TempDir()
 	t.Setenv("HOME", fakeHome)
 	plugin := filepath.Join(fakeHome, "myplugin")
-	require.NoError(t, os.MkdirAll(plugin, 0755))
+	Expect(t, NoError(os.MkdirAll(plugin, 0755)))
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(plugin, "myplugin.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(plugin, "myplugin.plugin.zsh"), []byte(""), 0644)))
 
 	t.Run("zsh", func(t *testing.T) {
 		b, err := New(fakeHome, plugin)
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.Contains(t, result, `fpath+=( "$HOME/myplugin" )`)
-		require.Contains(t, result, `source "$HOME/myplugin/myplugin.plugin.zsh"`)
+		Expect(t, NoError(err))
+		Expect(t, Contains(result, `fpath+=( "$HOME/myplugin" )`))
+		Expect(t, Contains(result, `source "$HOME/myplugin/myplugin.plugin.zsh"`))
 	})
 
 	t.Run("path", func(t *testing.T) {
 		b, err := New(fakeHome, plugin+" kind:path")
-		require.NoError(t, err)
+		Expect(t, NoError(err))
 		result, err := b.Get()
-		require.NoError(t, err)
-		require.Equal(t, `export PATH="$HOME/myplugin:$PATH"`, result)
+		Expect(t, NoError(err))
+		Expect(t, Equals(`export PATH="$HOME/myplugin:$PATH"`, result))
 	})
 }
 
 func TestInitFileDirNamePriority(t *testing.T) {
 	home := home(t)
 	dir := filepath.Join(home, "myplug")
-	require.NoError(t, os.MkdirAll(dir, 0755))
+	Expect(t, NoError(os.MkdirAll(dir, 0755)))
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "myplug.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(dir, "myplug.plugin.zsh"), []byte(""), 0644)))
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "other.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(dir, "other.plugin.zsh"), []byte(""), 0644)))
 	b, err := New(home, dir)
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := b.Get()
-	require.NoError(t, err)
-	require.Contains(t, result, `source "`+filepath.Join(dir, "myplug.plugin.zsh")+`"`)
-	require.NotContains(t, result, "other.plugin.zsh")
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, `source "`+filepath.Join(dir, "myplug.plugin.zsh")+`"`))
+	Expect(t, Not(Contains(result, "other.plugin.zsh")))
 }
 
 func TestInitFileAssumeDefault(t *testing.T) {
 	home := home(t)
 	dir := filepath.Join(home, "myplug")
-	require.NoError(t, os.MkdirAll(dir, 0755))
+	Expect(t, NoError(os.MkdirAll(dir, 0755)))
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(dir, "README.md"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(dir, "README.md"), []byte(""), 0644)))
 	b, err := New(home, dir)
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := b.Get()
-	require.NoError(t, err)
-	require.Contains(t, result, `fpath+=( "`+dir+`" )`)
-	require.Contains(t, result, `source "`+filepath.Join(dir, "myplug.plugin.zsh")+`"`)
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, `fpath+=( "`+dir+`" )`))
+	Expect(t, Contains(result, `source "`+filepath.Join(dir, "myplug.plugin.zsh")+`"`))
 }
 
 func TestDeferredPost(t *testing.T) {
 	home := home(t)
 	// nolint: gosec
-	require.NoError(t, os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644))
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "p.plugin.zsh"), []byte(""), 0644)))
 	b, err := New(home, home+" kind:defer post:my_post_cmd")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := b.Get()
-	require.NoError(t, err)
-	require.That(t, strings.HasSuffix(result, "\nzsh-defer my_post_cmd"), "post should be deferred, got: %s", result)
+	Expect(t, NoError(err))
+	Expect(t, strings.HasSuffix(result, "\nzsh-defer my_post_cmd"), "post should be deferred, got: %s", result)
 }
 
 // Non-bundle lines must error, not build a bundle around a garbage
@@ -413,16 +413,16 @@ func TestNewRejectsNonBundleLines(t *testing.T) {
 	for _, line := range []string{"", "   ", "# comment"} {
 		t.Run("line "+line, func(t *testing.T) {
 			b, err := New(home(t), line)
-			require.Error(t, err)
-			require.That(t, b == nil)
+			Expect(t, AnError(err))
+			Expect(t, b == nil)
 		})
 	}
 }
 
 func TestNewFromParsedRejectsEmptyName(t *testing.T) {
 	b, err := NewFromParsed(home(t), bundleparse.Bundle{})
-	require.Error(t, err)
-	require.That(t, b == nil)
+	Expect(t, AnError(err))
+	Expect(t, b == nil)
 }
 
 // A pinned clone folder carries a /tree/<sha> suffix; the sha must not
@@ -435,18 +435,18 @@ func TestPinnedZshBundleInitFilePriority(t *testing.T) {
 	sha := upstream.Commit("add plugins")
 
 	b, err := New(home(t), fmt.Sprintf("%s pin:%s", upstream.URL(), sha))
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 	result, err := b.Get()
-	require.NoError(t, err)
-	require.Contains(t, result, name+".plugin.zsh")
-	require.NotContains(t, result, "zzz.plugin.zsh")
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, name+".plugin.zsh"))
+	Expect(t, Not(Contains(result, "zzz.plugin.zsh")))
 }
 
 func TestPinRequiresFullSHA(t *testing.T) {
 	home := home(t)
 	_, err := New(home, "owner/repo pin:abc123")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "40-character")
+	Expect(t, AnError(err))
+	Expect(t, Contains(err.Error(), "40-character"))
 }
 
 func home(t *testing.T) string {

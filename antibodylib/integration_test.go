@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mattmc3/antibody/internal/require"
+	. "github.com/mattmc3/antibody/internal/expect"
 )
 
 // Integration tests clone real repos over the network.
@@ -27,7 +27,7 @@ func skipShort(t *testing.T) {
 func TestBundleLargeCorpus(t *testing.T) {
 	skipShort(t)
 	corpus, err := os.ReadFile("../scripts/profiling/bundles.txt")
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 
 	active := 0
 	for _, line := range strings.Split(string(corpus), "\n") {
@@ -36,7 +36,7 @@ func TestBundleLargeCorpus(t *testing.T) {
 			active++
 		}
 	}
-	require.That(t, active > 100, "corpus unexpectedly small: %d", active)
+	Expect(t, active > 100, "corpus unexpectedly small: %d", active)
 
 	home := home(t)
 	sh, err := New(
@@ -44,7 +44,7 @@ func TestBundleLargeCorpus(t *testing.T) {
 		bytes.NewBuffer(corpus),
 		runtime.NumCPU(),
 	).Bundle()
-	require.NoError(t, err)
+	Expect(t, NoError(err))
 
 	sources := 0
 	for _, line := range strings.Split(sh, "\n") {
@@ -52,11 +52,11 @@ func TestBundleLargeCorpus(t *testing.T) {
 			sources++
 		}
 	}
-	require.That(t, sources >= active, "sources %d < active %d", sources, active)
+	Expect(t, sources >= active, "sources %d < active %d", sources, active)
 
 	cloned, err := os.ReadDir(home)
-	require.NoError(t, err)
-	require.Equal(t, active, len(cloned))
+	Expect(t, NoError(err))
+	Expect(t, Equals(active, len(cloned)))
 }
 
 // BenchmarkDownload-8   	       1	2907868713 ns/op	  480296 B/op	    2996 allocs/op v1
@@ -95,6 +95,6 @@ func BenchmarkDownload(b *testing.B) {
 			bytes.NewBufferString(bundles),
 			runtime.NumCPU(),
 		).Bundle()
-		require.NoError(b, err)
+		Expect(b, NoError(err))
 	}
 }
