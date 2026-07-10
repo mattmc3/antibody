@@ -160,7 +160,93 @@ func TestCLIInit(t *testing.T) {
 }
 
 func TestCLIVersion(t *testing.T) {
-	res := runCLI(t, t.TempDir(), "", "--version")
-	require.Equal(t, 0, res.exitCode)
-	require.Contains(t, res.stdout+res.stderr, "antibody version")
+	for _, flag := range []string{"--version", "-v"} {
+		res := runCLI(t, t.TempDir(), "", flag)
+		require.Equal(t, 0, res.exitCode)
+		require.Contains(t, res.stdout+res.stderr, "antibody version")
+	}
+}
+
+func TestCLIHelp(t *testing.T) {
+	// no args prints usage too
+	for _, args := range [][]string{{"-h"}, {"--help"}, {"help"}, {}} {
+		res := runCLI(t, t.TempDir(), "", args...)
+		require.Equal(t, 0, res.exitCode, res.stderr)
+		out := res.stdout + res.stderr
+		require.Contains(t, out, "Commands:")
+		require.Contains(t, out, "bundle")
+	}
+}
+
+func TestCLIHelpCommand(t *testing.T) {
+	res := runCLI(t, t.TempDir(), "", "help", "purge")
+	require.Equal(t, 0, res.exitCode, res.stderr)
+	require.Contains(t, res.stdout+res.stderr, "purge")
+
+	// ls resolves to list help
+	res = runCLI(t, t.TempDir(), "", "help", "ls")
+	require.Equal(t, 0, res.exitCode, res.stderr)
+	require.Contains(t, res.stdout, "antibody list")
+
+	// -h works after a subcommand and shows that command's help
+	res = runCLI(t, t.TempDir(), "", "bundle", "-h")
+	require.Equal(t, 0, res.exitCode, res.stderr)
+	require.Contains(t, res.stdout, "antibody bundle")
+}
+
+func TestCLIListVariants(t *testing.T) {
+	upstream := pluginFixture(t)
+	home := t.TempDir()
+	require.Equal(t, 0, runCLI(t, home, "", "bundle", upstream.URL()).exitCode)
+
+	list := runCLI(t, home, "", "list")
+	ls := runCLI(t, home, "", "ls")
+	require.Equal(t, 0, ls.exitCode, ls.stderr)
+	require.Equal(t, list.stdout, ls.stdout)
+
+	dirs := runCLI(t, home, "", "list", "-d")
+	require.Equal(t, 0, dirs.exitCode, dirs.stderr)
+	require.Contains(t, dirs.stdout, home)
+	require.NotContains(t, dirs.stdout, upstream.URL())
+
+	urls := runCLI(t, home, "", "list", "--url")
+	require.Equal(t, 0, urls.exitCode, urls.stderr)
+	require.Contains(t, urls.stdout, upstream.URL())
+	require.NotContains(t, urls.stdout, home)
+}
+
+func TestCLIParallelismFlagPosition(t *testing.T) {
+	home := t.TempDir()
+	// global flag works before and after the subcommand
+	before := runCLI(t, home, "", "-p", "2", "home")
+	require.Equal(t, 0, before.exitCode, before.stderr)
+	require.Equal(t, home+"\n", before.stdout)
+
+	after := runCLI(t, home, "", "home", "-p", "2")
+	require.Equal(t, 0, after.exitCode, after.stderr)
+	require.Equal(t, home+"\n", after.stdout)
+}
+
+func TestCLIUsageErrors(t *testing.T) {
+	cases := map[string][]string{
+		"unknown command": {"frobnicate"},
+		"unknown flag":    {"--bogus"},
+		"missing arg":     {"purge"},
+		"missing shell":   {"completions"},
+	}
+	for name, args := range cases {
+		res := runCLI(t, t.TempDir(), "", args...)
+		require.NotEqual(t, 0, res.exitCode, name)
+		require.Contains(t, res.stderr, "antibody: error:", name)
+	}
+}
+
+func TestCLICompletions(t *testing.T) {
+	res := runCLI(t, t.TempDir(), "", "completions", "zsh")
+	require.Equal(t, 0, res.exitCode, res.stderr)
+	require.Contains(t, res.stdout, "#compdef antibody")
+
+	bad := runCLI(t, t.TempDir(), "", "completions", "fish")
+	require.NotEqual(t, 0, bad.exitCode)
+	require.Contains(t, bad.stderr, "antibody: error:")
 }

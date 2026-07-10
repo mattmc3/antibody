@@ -26,7 +26,7 @@ func TestCompletionsZshListFlags(t *testing.T) {
 func TestCompletionsZshHelp(t *testing.T) {
 	out, err := Completions("zsh")
 	require.NoError(t, err)
-	// kingpin auto-adds a help subcommand; every subcommand takes -h
+	// the CLI has a help subcommand; every subcommand takes -h
 	require.Contains(t, out, "help:")
 	require.Contains(t, out, "(help)")
 	require.Contains(t, out, "Show help for a command")

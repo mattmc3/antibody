@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -16,36 +15,22 @@ import (
 	"github.com/mattmc3/antibody/internal/config"
 	"github.com/mattmc3/antibody/project"
 	"github.com/mattmc3/antibody/shell"
-	"golang.org/x/term"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 // nolint: gochecknoglobals
-var (
-	version = "7.0.0-dev"
+var version = "7.0.0-dev"
 
-	app         = kingpin.New("antibody", "The fastest shell plugin manager")
-	parallelism = app.Flag("parallelism", "max amount of tasks to launch in parallel").
-			Short('p').
-			Default(strconv.Itoa(runtime.NumCPU())).
-			Int()
-	bundleCmd = app.Command("bundle", "downloads a bundle and prints its source line")
-	bundles   = bundleCmd.Arg("bundles", "bundle list").Strings()
-	updateCmd = app.Command("update", "updates all previously bundled bundles")
-	homeCmd   = app.Command("home", "prints where antibody is cloning the bundles")
-	purgeCmd  = app.Command("purge", "purges a bundle from your computer")
-	purgee    = purgeCmd.Arg("bundle", "bundle to be purged").Required().String()
-	listCmd   = app.Command("list", "lists all currently installed bundles").Alias("ls")
-	listDirs  = listCmd.Flag("dirs", "show bundle directory paths").Short('d').Bool()
-	listURL   = listCmd.Flag("url", "show bundle URLs only").Short('u').Bool()
-	pathCmd   = app.Command("path", "prints the path of a currently cloned bundle")
-	pathee    = pathCmd.Arg("bundle", "bundle in which to find and print cloned path").Required().String()
-	initCmd   = app.Command("init", "initializes the shell so Antibody can work as expected")
+// cliOptions holds the values of all command line flags.
+type cliOptions struct {
+	parallelism int
+	showVersion bool
+	dirs        bool
+	urls        bool
+	fpath       bool
+}
 
-	completionsCmd   = app.Command("completions", "generates shell completion scripts")
-	completionsFor   = completionsCmd.Arg("shell", "shell to generate completions for").Required().String()
-	completionsFpath = completionsCmd.Flag("fpath", "write the script to the completions dir and print the file path").Bool()
-)
+// nolint: gochecknoglobals
+var opts = cliOptions{parallelism: runtime.NumCPU()}
 
 // nolint: gochecknoinits
 func init() {
@@ -56,67 +41,91 @@ func init() {
 
 func main() {
 	_, err := config.Load()
-	app.FatalIfError(err, "failed to parse config")
+	fatalIfError(err, "failed to parse config")
 
-	app.Author("Carlos Alexandro Becker <caarlos0@gmail.com>")
-	app.Version("antibody version " + version)
-	app.VersionFlag.Short('v')
-	app.HelpFlag.Short('h')
+	rootFlags := newFlagSet("antibody")
+	rootFlags.BoolVar(&opts.showVersion, "version", false, versionUsage)
+	rootFlags.Alias("v", "version")
+	rest := rootFlags.parse(os.Args[1:])
 
-	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-	case bundleCmd.FullCommand():
-		bundle()
-	case updateCmd.FullCommand():
+	if opts.showVersion {
+		fmt.Println("antibody version " + version)
+		return
+	}
+	if len(rest) == 0 {
+		help(nil)
+		return
+	}
+
+	cmd, args := rest[0], rest[1:]
+	switch cmd {
+	case "help":
+		help(args)
+	case "bundle":
+		bundle(newFlagSet("bundle").parse(args))
+	case "update":
+		newFlagSet("update").parse(args)
 		update()
-	case homeCmd.FullCommand():
+	case "home":
+		newFlagSet("home").parse(args)
 		fmt.Println(findHome())
-	case purgeCmd.FullCommand():
-		purge()
-	case listCmd.FullCommand():
-		list()
-	case pathCmd.FullCommand():
-		path()
-	case initCmd.FullCommand():
+	case "purge":
+		purge(requiredArg(newFlagSet("purge").parse(args), "bundle"))
+	case "list", "ls":
+		fs := newFlagSet("list")
+		fs.BoolVar(&opts.dirs, "dirs", false, dirsUsage)
+		fs.Alias("d", "dirs")
+		fs.BoolVar(&opts.urls, "url", false, urlUsage)
+		fs.Alias("u", "url")
+		fs.parse(args)
+		list(opts.dirs, opts.urls)
+	case "path":
+		path(requiredArg(newFlagSet("path").parse(args), "bundle"))
+	case "init":
+		newFlagSet("init").parse(args)
 		sh, err := shell.Init()
-		app.FatalIfError(err, "failed to init")
+		fatalIfError(err, "failed to init")
 		fmt.Println(sh)
-	case completionsCmd.FullCommand():
-		if *completionsFpath {
-			file, err := shell.CompletionsFpath(*completionsFor)
-			app.FatalIfError(err, "failed to generate completions")
-			fmt.Println(file)
-		} else {
-			sh, err := shell.Completions(*completionsFor)
-			app.FatalIfError(err, "failed to generate completions")
-			fmt.Println(sh)
-		}
+	case "completions":
+		fs := newFlagSet("completions")
+		fs.BoolVar(&opts.fpath, "fpath", false, fpathUsage)
+		completions(requiredArg(fs.parse(args), "shell"), opts.fpath)
+	default:
+		fatalf("expected command but got %q, try --help", cmd)
 	}
 }
 
-func bundle() {
+func requiredArg(rest []string, name string) string {
+	if len(rest) == 0 {
+		fatalf("required argument '%s' not provided, try --help", name)
+	}
+	return rest[0]
+}
+
+func bundle(bundles []string) {
 	var input io.Reader
-	if !term.IsTerminal(int(os.Stdin.Fd())) && len(*bundles) == 0 {
+	if stdinPiped() && len(bundles) == 0 {
 		input = os.Stdin
 	} else {
-		input = bytes.NewBufferString(strings.Join(*bundles, " "))
+		input = bytes.NewBufferString(strings.Join(bundles, " "))
 	}
-	sh, err := antibodylib.New(findHome(), input, *parallelism).Bundle()
-	app.FatalIfError(err, "failed to bundle")
+	sh, err := antibodylib.New(findHome(), input, opts.parallelism).Bundle()
+	fatalIfError(err, "failed to bundle")
 	fmt.Println(sh)
 }
 
 func update() {
 	var home = findHome()
 	fmt.Printf("Updating all bundles in %v...\n", home)
-	var err = project.Update(home, *parallelism)
-	app.FatalIfError(err, "failed to update")
+	var err = project.Update(home, opts.parallelism)
+	fatalIfError(err, "failed to update")
 }
 
-func purge() {
+func purge(bundle string) {
 	home := findHome()
-	fmt.Printf("Removing %s...\n", *purgee)
-	root, err := project.CloneRoot(home, *purgee)
-	app.FatalIfError(err, "failed to purge")
+	fmt.Printf("Removing %s...\n", bundle)
+	root, err := project.CloneRoot(home, bundle)
+	fatalIfError(err, "failed to purge")
 	candidates := []string{root}
 
 	pinnedGlob := root + "-SLASH-*"
@@ -127,27 +136,27 @@ func purge() {
 	removed := false
 	for _, path := range candidates {
 		if _, err := os.Stat(path); err == nil {
-			app.FatalIfError(os.RemoveAll(path), "failed to purge")
+			fatalIfError(os.RemoveAll(path), "failed to purge")
 			removed = true
 		}
 	}
 	if !removed {
-		app.Fatalf("%s does not exist on expected location: %s", *purgee, root)
+		fatalf("%s does not exist on expected location: %s", bundle, root)
 	}
 	fmt.Println("removed!")
 }
 
-func list() {
+func list(dirs, urls bool) {
 	var home = findHome()
 	projects, err := project.List(home)
-	app.FatalIfError(err, "failed to list bundles")
+	fatalIfError(err, "failed to list bundles")
 
 	switch {
-	case *listDirs:
+	case dirs:
 		for _, b := range projects {
 			fmt.Println(filepath.Join(home, b))
 		}
-	case *listURL:
+	case urls:
 		for _, b := range projects {
 			fmt.Println(project.EscapedPathToURL(b))
 		}
@@ -155,17 +164,17 @@ func list() {
 		w := tabwriter.NewWriter(os.Stdout, 0, 1, 4, ' ', tabwriter.TabIndent)
 		for _, b := range projects {
 			if _, err := fmt.Fprintf(w, "%s\t%s\n", project.EscapedPathToURL(b), filepath.Join(home, b)); err != nil {
-				app.FatalIfError(err, "failed to write")
+				fatalIfError(err, "failed to write")
 			}
 		}
-		app.FatalIfError(w.Flush(), "failed to flush")
+		fatalIfError(w.Flush(), "failed to flush")
 	}
 }
 
-func path() {
+func path(bundle string) {
 	home := findHome()
-	root, err := project.CloneRoot(home, *pathee)
-	app.FatalIfError(err, "failed to find path")
+	root, err := project.CloneRoot(home, bundle)
+	fatalIfError(err, "failed to find path")
 	paths := []string{root}
 	pinnedGlob := root + "-SLASH-*"
 	if matches, err := filepath.Glob(pinnedGlob); err == nil {
@@ -180,7 +189,7 @@ func path() {
 	}
 
 	if len(existing) == 0 {
-		app.Fatalf("%s does not exist in cloned paths", *pathee)
+		fatalf("%s does not exist in cloned paths", bundle)
 	}
 
 	for _, path := range existing {
@@ -188,10 +197,38 @@ func path() {
 	}
 }
 
+func completions(forShell string, fpath bool) {
+	if fpath {
+		file, err := shell.CompletionsFpath(forShell)
+		fatalIfError(err, "failed to generate completions")
+		fmt.Println(file)
+	} else {
+		sh, err := shell.Completions(forShell)
+		fatalIfError(err, "failed to generate completions")
+		fmt.Println(sh)
+	}
+}
+
+// stdinPiped reports whether stdin is not a terminal.
+func stdinPiped() bool {
+	stat, err := os.Stdin.Stat()
+	return err == nil && stat.Mode()&os.ModeCharDevice == 0
+}
+
 func findHome() string {
 	h, err := antibodylib.Home()
 	if err != nil {
-		app.Fatalf("could't get cache folder: %v", err)
+		fatalf("could't get cache folder: %v", err)
 	}
 	return h
+}
+
+func fatalf(format string, args ...any) {
+	log.Fatalf("error: "+format, args...)
+}
+
+func fatalIfError(err error, msg string) {
+	if err != nil {
+		fatalf("%s: %v", msg, err)
+	}
 }
