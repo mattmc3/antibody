@@ -5,11 +5,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
 	. "github.com/mattmc3/antibody/internal/expect"
 	"github.com/mattmc3/antibody/internal/gittest"
+	"github.com/mattmc3/antibody/shell"
 )
 
 // nolint: gochecknoglobals
@@ -249,4 +251,49 @@ func TestCLICompletions(t *testing.T) {
 	bad := runCLI(t, t.TempDir(), "", "completions", "fish")
 	Expect(t, bad.exitCode != 0, "expected failure exit code")
 	Expect(t, Contains(bad.stderr, "antibody: error:"))
+}
+
+// The zsh completion script is hand-authored, so it can drift from the real
+// command surface. cmdHelp is the CLI's command registry; this guards both
+// directions: a new or removed subcommand fails until the completion script
+// is updated to match.
+func TestCompletionScriptCoversCommands(t *testing.T) {
+	// aliases share another command's help and get no completion entry
+	aliases := map[string]bool{"ls": true}
+
+	comp, err := shell.Completions("zsh")
+	Expect(t, NoError(err))
+	advertised := map[string]bool{}
+	for _, name := range completionSubcommands(t, comp) {
+		advertised[name] = true
+	}
+
+	for name := range cmdHelp {
+		if aliases[name] {
+			continue
+		}
+		Expect(t, advertised[name], "command %q missing from completion script", name)
+	}
+	for name := range advertised {
+		_, known := cmdHelp[name]
+		Expect(t, known, "completion script advertises unknown command %q", name)
+	}
+}
+
+// completionSubcommands returns the command names listed in the completion
+// script's subcommands array.
+func completionSubcommands(t *testing.T, script string) []string {
+	t.Helper()
+	start := strings.Index(script, "subcommands=(")
+	Expect(t, start >= 0, "subcommands array not found")
+	block := script[start:]
+	end := strings.Index(block, ")")
+	Expect(t, end >= 0, "unterminated subcommands array")
+
+	var names []string
+	for _, m := range regexp.MustCompile(`'(\w+):`).FindAllStringSubmatch(block[:end], -1) {
+		names = append(names, m[1])
+	}
+	Expect(t, len(names) > 0, "no subcommands parsed from completion script")
+	return names
 }
