@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +13,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/mattmc3/antibody/antibodylib"
+	"github.com/mattmc3/antibody/bundleparse"
 	"github.com/mattmc3/antibody/internal/config"
 	"github.com/mattmc3/antibody/project"
 	"github.com/mattmc3/antibody/shell"
@@ -109,9 +111,53 @@ func bundle(bundles []string) {
 	} else {
 		input = bytes.NewBufferString(strings.Join(bundles, " "))
 	}
-	sh, err := antibodylib.New(findHome(), input, opts.parallelism).Bundle()
+	ab := antibodylib.New(findHome(), input, opts.parallelism)
+	ab.Presets = presetsFromEnv()
+	sh, err := ab.Bundle()
 	fatalIfError(err, "failed to bundle")
 	fmt.Println(sh)
+	if export := presetExport(ab.Presets); export != "" {
+		fmt.Println(export)
+	}
+}
+
+// presetsFromEnv reads the presets an earlier dynamic-mode call exported. The
+// export outlives that call, so a static bundling must not pick it up.
+func presetsFromEnv() bundleparse.Presets {
+	raw := os.Getenv("ANTIBODY_PRESETS")
+	if raw == "" || !dynamicMode() {
+		return nil
+	}
+	var presets bundleparse.Presets
+	if err := json.Unmarshal([]byte(raw), &presets); err != nil {
+		log.Printf("ignoring unreadable $ANTIBODY_PRESETS: %v", err)
+		return nil
+	}
+	return presets
+}
+
+// presetExport returns the line that hands presets to the next dynamic-mode
+// call, which the shell picks up by sourcing this output.
+func presetExport(presets bundleparse.Presets) string {
+	if len(presets) == 0 || !dynamicMode() {
+		return ""
+	}
+	data, err := json.Marshal(presets)
+	if err != nil {
+		log.Printf("could not export presets: %v", err)
+		return ""
+	}
+	return "export ANTIBODY_PRESETS=" + singleQuote(string(data))
+}
+
+// dynamicMode reports whether antibody init's shell function is sourcing this
+// output, which is the only case where preset state carries between calls.
+func dynamicMode() bool {
+	return os.Getenv("ANTIBODY_DYNAMIC") == "true"
+}
+
+func singleQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 func update() {

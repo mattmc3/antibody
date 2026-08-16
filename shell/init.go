@@ -7,22 +7,24 @@ import (
 )
 
 const tmpl = `#!/usr/bin/env zsh
+typeset -g _ANTIBODY_BIN="{{ . }}"
+
 antibody() {
 	case "$1" in
 	bundle)
-		source <( {{ . }} "$@" ) || {{ . }} "$@"
+		source <( ANTIBODY_DYNAMIC=true "$_ANTIBODY_BIN" "$@" ) || "$_ANTIBODY_BIN" "$@"
 		;;
 	*)
-		{{ . }} "$@"
+		"$_ANTIBODY_BIN" "$@"
 		;;
 	esac
 }
 
 if ! (( $+functions[_antibody] )); then
 	if (( $+functions[compdef] )); then
-		source <( {{ . }} completions zsh )
+		source <( "$_ANTIBODY_BIN" completions zsh )
 	else
-		fpath=("${$( {{ . }} completions --fpath zsh ):h}" $fpath)
+		fpath=("${$( "$_ANTIBODY_BIN" completions --fpath zsh ):h}" $fpath)
 	fi
 fi
 `

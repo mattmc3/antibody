@@ -10,6 +10,7 @@ type Directive string
 const (
 	BundleDirective Directive = "bundle"
 	UsingDirective  Directive = "using"
+	PresetDirective Directive = "preset"
 )
 
 type ParsedLine struct {
@@ -49,14 +50,22 @@ func ParseLine(line string) (ParsedLine, error) {
 		return result, nil
 	}
 
-	if strings.HasPrefix(name, "using:") {
-		usingName := strings.TrimPrefix(name, "using:")
-		if usingName == "" {
+	switch {
+	case strings.HasPrefix(name, "using:"):
+		target := strings.TrimPrefix(name, "using:")
+		if target == "" {
 			return ParsedLine{}, fmt.Errorf("missing using target")
 		}
 		result.Directive = UsingDirective
-		result.Name = usingName
-	} else {
+		result.Name = target
+	case strings.HasPrefix(name, "preset:"):
+		target := strings.TrimPrefix(name, "preset:")
+		if target == "" {
+			return ParsedLine{}, fmt.Errorf("missing preset target")
+		}
+		result.Directive = PresetDirective
+		result.Name = target
+	default:
 		result.Directive = BundleDirective
 		result.Name = name
 	}

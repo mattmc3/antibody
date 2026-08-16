@@ -2,6 +2,8 @@ package bundleparse
 
 import (
 	"fmt"
+	"maps"
+	"regexp"
 	"strings"
 )
 
@@ -73,10 +75,21 @@ func (e ParseError) Unwrap() error {
 // Each non-empty line is passed through ParseLine, then validated and
 // converted into a Bundle struct.
 func ParseBundles(input string) ([]Bundle, error) {
+	bundles, _, err := ParseBundlesWith(input, nil)
+	return bundles, err
+}
+
+// ParseBundlesWith parses input starting from the given presets and returns
+// the presets in effect afterwards, so a caller bundling a plugins file one
+// call at a time can carry them across calls.
+func ParseBundlesWith(input string, presets Presets) ([]Bundle, Presets, error) {
 	input = strings.ReplaceAll(input, "\r\n", "\n")
 	lines := strings.Split(input, "\n")
 	bundles := make([]Bundle, 0, len(lines))
 	var usingDirective *ParsedLine
+
+	carried := Presets{}
+	maps.Copy(carried, presets)
 
 	for idx, line := range lines {
 		if strings.TrimSpace(line) == "" {
@@ -85,11 +98,18 @@ func ParseBundles(input string) ([]Bundle, error) {
 
 		parsed, err := ParseLine(line)
 		if err != nil {
-			return nil, ParseError{Line: idx + 1, Err: err}
+			return nil, nil, ParseError{Line: idx + 1, Err: err}
 		}
 
-		if parsed.Directive == UsingDirective {
+		switch parsed.Directive {
+		case UsingDirective:
 			usingDirective = &parsed
+			continue
+		case PresetDirective:
+			if err := validateAnnotations(parsed.Name, parsed.Annotations); err != nil {
+				return nil, nil, ParseError{Line: idx + 1, Err: err}
+			}
+			carried.set(parsed.Name, parsed.Annotations)
 			continue
 		}
 
@@ -97,19 +117,26 @@ func ParseBundles(input string) ([]Bundle, error) {
 			continue
 		}
 
+		// a bare word under a path-style using: resolves to its own
+		// subdirectory, so the target's preset is not its preset
+		presetable := true
 		if usingDirective != nil && !strings.Contains(parsed.Name, "/") {
+			presetable = !isLocalName(usingDirective.Name)
 			parsed = applyUsingDirective(parsed, *usingDirective)
+		}
+		if presetable {
+			carried.apply(parsed)
 		}
 
 		bundle, err := bundleFromParsed(parsed)
 		if err != nil {
-			return nil, ParseError{Line: idx + 1, Err: err}
+			return nil, nil, ParseError{Line: idx + 1, Err: err}
 		}
 		bundle.Line = idx + 1
 		bundles = append(bundles, bundle)
 	}
 
-	return bundles, nil
+	return bundles, carried, nil
 }
 
 // ParseBundleLine parses a single bundle definition line.
@@ -227,6 +254,39 @@ func bundleFromParsed(parsed ParsedLine) (Bundle, error) {
 	}
 
 	return bundle, nil
+}
+
+// validateAnnotations checks the values a directive line carries, which is
+// otherwise only done when a bundle line is turned into a Bundle.
+func validateAnnotations(name string, annotations map[string]string) error {
+	if value, ok := annotations[KeyKind]; ok {
+		if err := validateKind(value); err != nil {
+			return err
+		}
+	}
+	if value, ok := annotations[KeyPin]; ok {
+		if err := ValidatePin(name, value); err != nil {
+			return err
+		}
+	}
+	if value, ok := annotations[KeyFpathRule]; ok {
+		return validateFpathRule(value)
+	}
+	return nil
+}
+
+var pinSHAPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
+
+// ValidatePin requires full 40-character commit SHAs for repo bundles.
+// Local bundles ignore pins.
+func ValidatePin(name, pin string) error {
+	if pin == "" || isLocalName(name) {
+		return nil
+	}
+	if !pinSHAPattern.MatchString(pin) {
+		return fmt.Errorf("pin requires a full 40-character commit SHA, got %q", pin)
+	}
+	return nil
 }
 
 func validateKind(value string) error {

@@ -44,12 +44,19 @@ type cliResult struct {
 // runCLI invokes the built binary with an isolated home and config dir.
 func runCLI(t *testing.T, home, stdin string, args ...string) cliResult {
 	t.Helper()
+	return runCLIEnv(t, home, stdin, nil, args...)
+}
+
+// runCLIEnv is runCLI with extra environment variables.
+func runCLIEnv(t *testing.T, home, stdin string, env []string, args ...string) cliResult {
+	t.Helper()
 	cmd := exec.Command(binPath, args...)
 	cmd.Env = append(os.Environ(),
 		"ANTIBODY_HOME="+home,
 		"XDG_CONFIG_HOME="+filepath.Join(home, ".config"),
 		"GIT_TERMINAL_PROMPT=0",
 	)
+	cmd.Env = append(cmd.Env, env...)
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}
@@ -296,4 +303,49 @@ func completionSubcommands(t *testing.T, script string) []string {
 	}
 	Expect(t, len(names) > 0, "no subcommands parsed from completion script")
 	return names
+}
+
+func TestCLIBundleDynamicCarriesPresets(t *testing.T) {
+	upstream := pluginFixture(t)
+	home := t.TempDir()
+
+	res := runCLIEnv(t, home, "preset:"+upstream.URL()+" kind:path", []string{"ANTIBODY_DYNAMIC=true"}, "bundle")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	presets := presetExportValue(t, res.stdout)
+
+	res = runCLIEnv(t, home, "", []string{"ANTIBODY_DYNAMIC=true", "ANTIBODY_PRESETS=" + presets}, "bundle", upstream.URL())
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, `export PATH="`))
+	Expect(t, Not(Contains(res.stdout, "source ")))
+}
+
+func TestCLIBundleStaticOmitsPresetExport(t *testing.T) {
+	upstream := pluginFixture(t)
+	input := "preset:" + upstream.URL() + " kind:path\n" + upstream.URL() + "\n"
+	res := runCLI(t, t.TempDir(), input, "bundle")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, `export PATH="`))
+	Expect(t, Not(Contains(res.stdout, "ANTIBODY_PRESETS")))
+}
+
+func TestCLIBundleStaticIgnoresPresetEnv(t *testing.T) {
+	upstream := pluginFixture(t)
+	home := t.TempDir()
+
+	res := runCLIEnv(t, home, "preset:"+upstream.URL()+" kind:path", []string{"ANTIBODY_DYNAMIC=true"}, "bundle")
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	presets := presetExportValue(t, res.stdout)
+
+	// an exported preset outlives the dynamic call that set it
+	res = runCLIEnv(t, home, "", []string{"ANTIBODY_PRESETS=" + presets}, "bundle", upstream.URL())
+	Expect(t, Equals(0, res.exitCode), res.stderr)
+	Expect(t, Contains(res.stdout, "source "))
+	Expect(t, Not(Contains(res.stdout, `export PATH="`)))
+}
+
+func presetExportValue(t *testing.T, stdout string) string {
+	t.Helper()
+	m := regexp.MustCompile(`export ANTIBODY_PRESETS='(.*)'`).FindStringSubmatch(stdout)
+	Expect(t, m != nil, "no preset export in output: %s", stdout)
+	return strings.ReplaceAll(m[1], `'\''`, `'`)
 }

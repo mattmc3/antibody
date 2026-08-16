@@ -5,8 +5,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/mattmc3/antibody/bundleparse"
 	"github.com/mattmc3/antibody/bundle"
+	"github.com/mattmc3/antibody/bundleparse"
 	"github.com/mattmc3/antibody/internal/config"
 	"golang.org/x/sync/errgroup"
 )
@@ -16,6 +16,9 @@ type Antibody struct {
 	r           io.Reader
 	parallelism int
 	Home        string
+	// Presets seeds Bundle with fallback annotations from earlier calls, and
+	// holds the presets in effect once Bundle returns.
+	Presets bundleparse.Presets
 }
 
 // New creates a new Antibody instance with the given parameters
@@ -41,10 +44,11 @@ func (a *Antibody) Bundle() (string, error) {
 	hasDefer := false
 	// normalize bare \r line endings
 	input := strings.ReplaceAll(strings.Join(lines, "\n"), "\r", "\n")
-	parsedBundles, err := bundleparse.ParseBundles(input)
+	parsedBundles, presets, err := bundleparse.ParseBundlesWith(input, a.Presets)
 	if err != nil {
 		return "", err
 	}
+	a.Presets = presets
 	for _, parsed := range parsedBundles {
 		if parsed.Kind == bundleparse.KindDefer {
 			hasDefer = true

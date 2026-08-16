@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/mattmc3/antibody/bundleparse"
@@ -45,7 +44,7 @@ func NewFromParsed(home string, parsed bundleparse.Bundle) (Bundle, error) {
 	if parsed.Name == "" {
 		return nil, fmt.Errorf("empty bundle name")
 	}
-	if err := validatePin(parsed); err != nil {
+	if err := bundleparse.ValidatePin(parsed.Name, parsed.Pin); err != nil {
 		return nil, err
 	}
 
@@ -93,20 +92,6 @@ func bundleFromParsed(parsed bundleparse.Bundle, proj project.Project) (Bundle, 
 	}
 
 	return b, nil
-}
-
-var pinSHAPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
-
-// validatePin requires full 40-character commit SHAs for repo bundles.
-// Local bundles ignore pins.
-func validatePin(parsed bundleparse.Bundle) error {
-	if parsed.Pin == "" || project.IsLocal(parsed.Name) {
-		return nil
-	}
-	if !pinSHAPattern.MatchString(parsed.Pin) {
-		return fmt.Errorf("pin requires a full 40-character commit SHA, got %q", parsed.Pin)
-	}
-	return nil
 }
 
 // decoratedBundle wraps a bundle with optional pre/post commands and a

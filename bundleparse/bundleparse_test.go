@@ -231,3 +231,23 @@ func TestParseLine_UsingDirective(t *testing.T) {
 
 	Expect(t, DeepEquals(want, got))
 }
+
+func TestParseLine_PresetDirective(t *testing.T) {
+	got, err := ParseLine(`preset:foo/bar pin:abc123`)
+	Expect(t, NoError(err))
+
+	want := ParsedLine{
+		Directive: PresetDirective,
+		Name:      "foo/bar",
+		Annotations: map[string]string{
+			"pin": "abc123",
+		},
+	}
+
+	Expect(t, DeepEquals(want, got))
+}
+
+func TestParseLine_PresetDirectiveMissingTarget(t *testing.T) {
+	_, err := ParseLine(`preset: pin:abc123`)
+	Expect(t, AnError(err), "empty preset target should error")
+}
