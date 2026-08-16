@@ -90,6 +90,7 @@ func ParseBundlesWith(input string, presets Presets) ([]Bundle, Presets, error) 
 
 	carried := Presets{}
 	maps.Copy(carried, presets)
+	cloned := clones{}
 
 	for idx, line := range lines {
 		if strings.TrimSpace(line) == "" {
@@ -130,6 +131,9 @@ func ParseBundlesWith(input string, presets Presets) ([]Bundle, Presets, error) 
 
 		bundle, err := bundleFromParsed(parsed)
 		if err != nil {
+			return nil, nil, ParseError{Line: idx + 1, Err: err}
+		}
+		if err := cloned.check(bundle); err != nil {
 			return nil, nil, ParseError{Line: idx + 1, Err: err}
 		}
 		bundle.Line = idx + 1

@@ -77,15 +77,15 @@ func TestParseBundles_PresetReachesBareWordsUnderUsing(t *testing.T) {
 func TestParseBundles_PresetAppliesOnlyToLaterEntries(t *testing.T) {
 	input := strings.Join([]string{
 		`foo/bar`,
-		`preset:foo/bar branch:next`,
+		`preset:foo/bar kind:fpath`,
 		`foo/bar path:lib`,
 	}, "\n")
 
 	bundles, err := ParseBundles(input)
 	Expect(t, NoError(err))
 	Expect(t, Equals(2, len(bundles)))
-	Expect(t, Equals("", bundles[0].Branch))
-	Expect(t, Equals("next", bundles[1].Branch))
+	Expect(t, Equals(KindZsh, bundles[0].Kind))
+	Expect(t, Equals(KindFpath, bundles[1].Kind))
 }
 
 func TestParseBundles_PresetReplacesEarlierPreset(t *testing.T) {
