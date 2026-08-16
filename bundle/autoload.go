@@ -43,12 +43,9 @@ func (b autoloadAnnotationBundle) Get() (result string, err error) {
 
 // autoloadLines builds fpath + autoload -Uz lines for a directory.
 func autoloadLines(dir, fpathRule string) string {
-	var lines []string
-	lines = append(lines, fpathLine(dir, fpathRule))
-	if resolvedFpathRule(fpathRule) == "prepend" {
-		lines = append(lines, "builtin autoload -Uz $fpath[1]/*(N.:t)")
-	} else {
-		lines = append(lines, "builtin autoload -Uz $fpath[-1]/*(N.:t)")
+	lines := []string{
+		fpathLine(dir, fpathRule),
+		"builtin autoload -Uz " + quote(dir) + "/*(N.:t)",
 	}
 	return strings.Join(lines, "\n")
 }

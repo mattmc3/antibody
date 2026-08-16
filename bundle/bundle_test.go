@@ -235,7 +235,19 @@ func TestAutoloadLocalBundle(t *testing.T) {
 	result, err := bundle.Get()
 	Expect(t, NoError(err))
 	Expect(t, Contains(result, "fpath+=( "))
-	Expect(t, Contains(result, "builtin autoload -Uz $fpath[-1]/*(N.:t)"))
+	Expect(t, Contains(result, "builtin autoload -Uz "+quote(displayPath(home))+"/*(N.:t)"))
+}
+
+func TestAutoloadLocalBundlePrepend(t *testing.T) {
+	home := home(t)
+	// nolint: gosec
+	Expect(t, NoError(os.WriteFile(filepath.Join(home, "_myfunc"), []byte(""), 0644)))
+	bundle, err := New(home, home+" kind:autoload fpath-rule:prepend")
+	Expect(t, NoError(err))
+	result, err := bundle.Get()
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, "fpath=( "))
+	Expect(t, Contains(result, "builtin autoload -Uz "+quote(displayPath(home))+"/*(N.:t)"))
 }
 
 func TestAutoloadAnnotationLocalBundle(t *testing.T) {
@@ -247,7 +259,8 @@ func TestAutoloadAnnotationLocalBundle(t *testing.T) {
 	Expect(t, NoError(err))
 	result, err := bundle.Get()
 	Expect(t, NoError(err))
-	Expect(t, Contains(result, "builtin autoload -Uz $fpath[-1]/*(N.:t)"))
+	dir := displayPath(filepath.Join(home, "functions"))
+	Expect(t, Contains(result, "builtin autoload -Uz "+quote(dir)+"/*(N.:t)"))
 	Expect(t, Contains(result, "source "))
 }
 
