@@ -395,6 +395,22 @@ func TestInitFileDirNamePriority(t *testing.T) {
 	Expect(t, Not(Contains(result, "other.plugin.zsh")))
 }
 
+func TestInitFileThemeNamePriority(t *testing.T) {
+	home := home(t)
+	dir := filepath.Join(home, "powerlevel10k")
+	Expect(t, NoError(os.MkdirAll(dir, 0755)))
+	// nolint: gosec
+	Expect(t, NoError(os.WriteFile(filepath.Join(dir, "powerlevel10k.zsh-theme"), []byte(""), 0644)))
+	// nolint: gosec
+	Expect(t, NoError(os.WriteFile(filepath.Join(dir, "powerlevel9k.zsh-theme"), []byte(""), 0644)))
+	b, err := New(home, dir)
+	Expect(t, NoError(err))
+	result, err := b.Get()
+	Expect(t, NoError(err))
+	Expect(t, Contains(result, `source "`+filepath.Join(dir, "powerlevel10k.zsh-theme")+`"`))
+	Expect(t, Not(Contains(result, "powerlevel9k.zsh-theme")))
+}
+
 func TestInitFileAssumeDefault(t *testing.T) {
 	home := home(t)
 	dir := filepath.Join(home, "myplug")

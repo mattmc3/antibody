@@ -56,11 +56,12 @@ func quote(p string) string {
 // <dir>/<name>.plugin.zsh first, then the glob fallbacks, and if
 // nothing matches, assume the default plugin file.
 func initFiles(dir string) ([]string, error) {
-	candidate := filepath.Join(dir, initFileBase(dir)+".plugin.zsh")
+	base := initFileBase(dir)
+	candidate := filepath.Join(dir, base+".plugin.zsh")
 	if _, err := os.Stat(candidate); err == nil {
 		return []string{candidate}, nil
 	}
-	for _, glob := range []string{"*.plugin.zsh", "*.zsh", "*.sh", "*.zsh-theme"} {
+	for _, glob := range []string{"*.plugin.zsh", "*.zsh", "*.sh", base + ".zsh-theme", "*.zsh-theme"} {
 		files, err := filepath.Glob(filepath.Join(dir, glob))
 		if err != nil {
 			return nil, err
