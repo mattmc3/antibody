@@ -77,7 +77,7 @@ func bundleFromParsed(parsed bundleparse.Bundle, proj project.Project) (Bundle, 
 		b = zshBundle{Project: proj}
 	}
 
-	if parsed.Autoload != "" && parsed.Kind != bundleparse.KindAutoload {
+	if parsed.Autoload != "" && parsed.Kind != bundleparse.KindAutoload && parsed.Kind != bundleparse.KindClone {
 		b = autoloadAnnotationBundle{inner: b, project: proj, subPath: parsed.Autoload, fpathRule: parsed.FpathRule}
 	}
 
@@ -125,6 +125,9 @@ func (b decoratedBundle) Get() (result string, err error) {
 		lines = append(lines, post)
 	}
 	result = strings.Join(lines, "\n")
+	if result == "" {
+		return "", nil
+	}
 
 	if b.conditional != "" {
 		var wrapped []string

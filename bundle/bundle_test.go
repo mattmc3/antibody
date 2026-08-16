@@ -481,3 +481,34 @@ func TestPinRequiresFullSHA(t *testing.T) {
 func home(t *testing.T) string {
 	return t.TempDir()
 }
+
+func TestCloneBundleEmitsNoScript(t *testing.T) {
+	upstream := gittest.New(t)
+	upstream.WriteFile("functions/myfunc", "echo myfunc\n")
+	upstream.Commit("add function")
+
+	for _, args := range []string{
+		"kind:clone autoload:functions",
+		"kind:clone conditional:is-macos",
+	} {
+		t.Run(args, func(t *testing.T) {
+			b, err := New(home(t), upstream.URL()+" "+args)
+			Expect(t, NoError(err))
+			result, err := b.Get()
+			Expect(t, NoError(err))
+			Expect(t, Equals("", result))
+		})
+	}
+}
+
+func TestCloneBundleStillRunsHooks(t *testing.T) {
+	upstream := gittest.New(t)
+	upstream.WriteFile("README.md", "docs\n")
+	upstream.Commit("add readme")
+
+	b, err := New(home(t), upstream.URL()+" kind:clone pre:before post:after")
+	Expect(t, NoError(err))
+	result, err := b.Get()
+	Expect(t, NoError(err))
+	Expect(t, Equals("before\nafter", result))
+}
