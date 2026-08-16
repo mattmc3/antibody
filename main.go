@@ -20,7 +20,7 @@ import (
 )
 
 // nolint: gochecknoglobals
-var version = "7.0.1-dev"
+var version = "7.1.0-dev"
 
 // cliOptions holds the values of all command line flags.
 type cliOptions struct {

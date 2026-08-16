@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [7.1.0] - 2026-08-15
+
+### Added
+- `preset:<bundle>` directive, setting fallback annotations for every
+  later entry of that bundle so `pin:` and friends need not repeat on
+  each line. Keyed by the repo, so the short, https, and ssh spellings
+  share one set; local bundles key on their resolved path, so `~/foo`,
+  `$HOME/foo`, and the absolute path share one set. Line-level and
+  `using:` values win
+- Presets carry across the one-call-per-line `antibody bundle` that
+  `antibody init` generates, through an exported `$ANTIBODY_PRESETS`
+
+### Changed
+- Entries of one repo that disagree on `pin:` or `branch:`, including one
+  entry carrying it and another not, now fail before anything is cloned,
+  naming the line. Such a file loaded the same plugin twice at different
+  revisions, or silently served the second entry the first entry's clone
+
+### Fixed
+- `kind:autoload` bundles and the `autoload:` annotation name their
+  functions directory instead of indexing `$fpath`, so the functions load
+  under `setopt ksh_arrays`
+- A theme repo shipping several `.zsh-theme` files sources only the one
+  named for the repo, so `romkatv/powerlevel10k` no longer also sources
+  the powerlevel9k compatibility shim
+- A `kind:clone` bundle emits no load script again when it carries an
+  `autoload:` or `conditional:` annotation. `pre:` and `post:` hooks
+  still run
+
 ## [7.0.1] - 2026-07-10
 
 ### Changed
@@ -56,5 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plugins files with Windows or bare carriage-return line endings parse
   correctly
 
-[Unreleased]: https://github.com/mattmc3/antibody/compare/v7.0.0...HEAD
+[Unreleased]: https://github.com/mattmc3/antibody/compare/v7.1.0...HEAD
+[7.1.0]: https://github.com/mattmc3/antibody/compare/v7.0.1...v7.1.0
+[7.0.1]: https://github.com/mattmc3/antibody/compare/v7.0.0...v7.0.1
 [7.0.0]: https://github.com/mattmc3/antibody/compare/v6.1.1...v7.0.0
